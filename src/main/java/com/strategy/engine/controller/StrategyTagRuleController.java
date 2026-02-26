@@ -2,9 +2,9 @@ package com.strategy.engine.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.strategy.engine.common.Result;
-import com.strategy.engine.dto.TagRuleDTO;
-import com.strategy.engine.service.TagRuleService;
-import com.strategy.engine.vo.TagRuleVO;
+import com.strategy.engine.dto.StrategyTagRuleDTO;
+import com.strategy.engine.service.StrategyTagRuleService;
+import com.strategy.engine.vo.StrategyTagRuleVO;
 import com.strategy.engine.vo.TagUsageVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -22,80 +22,74 @@ import java.util.List;
 @RestController
 @RequestMapping("/tag")
 @RequiredArgsConstructor
-public class TagRuleController {
+public class StrategyTagRuleController {
 
-    private final TagRuleService tagRuleService;
+    private final StrategyTagRuleService strategyTagRuleService;
 
     @Operation(summary = "根据引擎ID分页查询标签列表")
     @GetMapping("/page/{engineId}")
-    public Result<Page<TagRuleVO>> pageByEngineId(
+    public Result<Page<StrategyTagRuleVO>> pageByEngineId(
             @Parameter(description = "引擎ID") @PathVariable Long engineId,
             @Parameter(description = "页码") @RequestParam(defaultValue = "1") Integer pageNum,
             @Parameter(description = "每页大小") @RequestParam(defaultValue = "10") Integer pageSize) {
-        Page<TagRuleVO> page = tagRuleService.pageByEngineId(engineId, pageNum, pageSize);
-        return Result.success(page);
+        return Result.success(strategyTagRuleService.pageByEngineId(engineId, pageNum, pageSize));
     }
 
     @Operation(summary = "查询标签详情")
     @GetMapping("/{id}")
-    public Result<TagRuleVO> getById(@Parameter(description = "标签ID") @PathVariable Long id) {
-        TagRuleVO vo = tagRuleService.getById(id);
-        return Result.success(vo);
+    public Result<StrategyTagRuleVO> getById(@Parameter(description = "标签ID") @PathVariable Long id) {
+        return Result.success(strategyTagRuleService.getById(id));
     }
 
     @Operation(summary = "创建标签")
     @PostMapping
-    public Result<Long> create(@Validated @RequestBody TagRuleDTO dto) {
-        Long id = tagRuleService.create(dto);
-        return Result.success("创建成功", id);
+    public Result<Long> create(@Validated @RequestBody StrategyTagRuleDTO dto) {
+        return Result.success("创建成功", strategyTagRuleService.create(dto));
     }
 
     @Operation(summary = "更新标签")
     @PutMapping
-    public Result<Void> update(@Validated @RequestBody TagRuleDTO dto) {
-        tagRuleService.update(dto);
+    public Result<Void> update(@Validated @RequestBody StrategyTagRuleDTO dto) {
+        strategyTagRuleService.update(dto);
         return Result.success("更新成功", null);
     }
 
     @Operation(summary = "删除标签")
     @DeleteMapping("/{id}")
     public Result<Void> delete(@Parameter(description = "标签ID") @PathVariable Long id) {
-        tagRuleService.delete(id);
+        strategyTagRuleService.delete(id);
         return Result.success("删除成功", null);
     }
 
     @Operation(summary = "根据引擎ID批量删除标签")
     @DeleteMapping("/batch/{engineId}")
     public Result<Void> batchDelete(@Parameter(description = "引擎ID") @PathVariable Long engineId) {
-        tagRuleService.batchDelete(engineId);
+        strategyTagRuleService.batchDelete(engineId);
         return Result.success("批量删除成功", null);
     }
 
     @Operation(summary = "根据引擎ID获取所有标签（不分页）")
     @GetMapping("/list/{engineId}")
-    public Result<List<TagRuleVO>> listByEngineId(@Parameter(description = "引擎ID") @PathVariable Long engineId) {
-        List<TagRuleVO> list = tagRuleService.listByEngineId(engineId);
-        return Result.success(list);
+    public Result<List<StrategyTagRuleVO>> listByEngineId(@Parameter(description = "引擎ID") @PathVariable Long engineId) {
+        return Result.success(strategyTagRuleService.listByEngineId(engineId));
     }
 
-    @Operation(summary = "根据引擎ID获取所有启用的标签（不分页）", description = "用于场景配置时选择标签")
+    @Operation(summary = "根据引擎ID获取所有启用的标签（不分页）", description = "供调用方获取参与求值的规则")
     @GetMapping("/list/{engineId}/enabled")
-    public Result<List<TagRuleVO>> listEnabledByEngineId(@Parameter(description = "引擎ID") @PathVariable Long engineId) {
-        List<TagRuleVO> list = tagRuleService.listEnabledByEngineId(engineId);
-        return Result.success(list);
+    public Result<List<StrategyTagRuleVO>> listEnabledByEngineId(@Parameter(description = "引擎ID") @PathVariable Long engineId) {
+        return Result.success(strategyTagRuleService.listEnabledByEngineId(engineId));
     }
 
     @Operation(summary = "切换标签启用/禁用状态")
     @PutMapping("/{id}/toggleStatus")
     public Result<Void> toggleStatus(@Parameter(description = "标签ID") @PathVariable Long id) {
-        tagRuleService.toggleStatus(id);
+        strategyTagRuleService.toggleStatus(id);
         return Result.success("操作成功", null);
     }
 
-    @Operation(summary = "查询标签使用情况", description = "查询有多少场景使用了该标签")
+    @Operation(summary = "查询标签使用情况")
     @GetMapping("/{id}/usage")
     public Result<TagUsageVO> getTagUsage(@Parameter(description = "标签ID") @PathVariable Long id) {
-        TagUsageVO vo = tagRuleService.getTagUsage(id);
-        return Result.success(vo);
+        return Result.success(strategyTagRuleService.getTagUsage(id));
     }
 }

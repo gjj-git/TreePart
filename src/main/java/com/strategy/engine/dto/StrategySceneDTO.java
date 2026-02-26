@@ -13,7 +13,7 @@ import java.util.List;
  */
 @Data
 @Schema(description = "场景策略请求对象")
-public class SceneStrategyDTO {
+public class StrategySceneDTO {
 
     @Schema(description = "场景ID（更新时必填）")
     private Long id;
@@ -29,11 +29,7 @@ public class SceneStrategyDTO {
     @Schema(description = "场景说明")
     private String description;
 
-    @NotNull(message = "状态不能为空")
-    @Schema(description = "状态：0-禁用, 1-启用", requiredMode = Schema.RequiredMode.REQUIRED)
-    private Integer status;
-
     @Valid
     @Schema(description = "标签关联配置列表（可选，不传则不修改已有关联）")
-    private List<SceneTagItemDTO> tags;
+    private List<StrategySceneTagItemDTO> tags;
 }

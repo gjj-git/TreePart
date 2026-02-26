@@ -5,11 +5,11 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 /**
- * 标签规则实体
+ * 场景策略实体
  */
 @Data
-@TableName("tag_rule")
-public class TagRule {
+@TableName("strategy_scene")
+public class StrategyScene {
 
     @TableId(type = IdType.AUTO)
     private Long id;
@@ -20,24 +20,14 @@ public class TagRule {
     private Long engineId;
 
     /**
-     * 标签名称
+     * 场景名称
      */
     private String name;
 
     /**
-     * 标签说明
+     * 场景说明
      */
     private String description;
-
-    /**
-     * 规则配置（JSON格式的条件树）
-     */
-    private String ruleConfig;
-
-    /**
-     * 状态：0-禁用, 1-启用
-     */
-    private Integer status;
 
     /**
      * 创建时间

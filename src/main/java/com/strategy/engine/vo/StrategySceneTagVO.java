@@ -8,7 +8,7 @@ import lombok.Data;
  */
 @Data
 @Schema(description = "场景标签配置响应对象")
-public class SceneTagVO {
+public class StrategySceneTagVO {
 
     @Schema(description = "关联ID")
     private Long id;
@@ -21,9 +21,6 @@ public class SceneTagVO {
 
     @Schema(description = "标签说明")
     private String tagDescription;
-
-    @Schema(description = "是否启用")
-    private Integer enabled;
 
     @Schema(description = "权重系数")
     private Integer weightCoefficient;

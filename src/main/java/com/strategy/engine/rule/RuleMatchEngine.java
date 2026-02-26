@@ -75,7 +75,7 @@ public class RuleMatchEngine {
      */
     private boolean evaluateCondition(RuleNode condition, Map<String, String> dataMap) {
         String field = condition.getField();
-        String op = condition.getConditionOperator();
+        String op = condition.getOperator();
         String ruleValue = condition.getValue();
 
         if (StrUtil.isBlank(field) || StrUtil.isBlank(op)) {

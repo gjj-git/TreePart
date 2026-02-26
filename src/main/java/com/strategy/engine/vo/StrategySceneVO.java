@@ -11,7 +11,7 @@ import java.util.List;
  */
 @Data
 @Schema(description = "场景策略响应对象")
-public class SceneStrategyVO {
+public class StrategySceneVO {
 
     @Schema(description = "场景ID")
     private Long id;
@@ -25,9 +25,6 @@ public class SceneStrategyVO {
     @Schema(description = "场景说明")
     private String description;
 
-    @Schema(description = "状态")
-    private Integer status;
-
     @Schema(description = "创建时间")
     private LocalDateTime createdTime;
 
@@ -35,5 +32,5 @@ public class SceneStrategyVO {
     private LocalDateTime updatedTime;
 
     @Schema(description = "关联的标签配置列表")
-    private List<SceneTagVO> tags;
+    private List<StrategySceneTagVO> tags;
 }

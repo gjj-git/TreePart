@@ -110,9 +110,6 @@ public class EngineFullConfigDTO {
         @Schema(description = "场景说明")
         private String description;
 
-        @Schema(description = "状态")
-        private Integer status;
-
         @Schema(description = "操作类型：add-新增, update-更新, delete-删除")
         private String action;
 
@@ -132,10 +129,6 @@ public class EngineFullConfigDTO {
 
         @Schema(description = "标签的数据库ID（用于引用已有标签）")
         private Long tagId;
-
-        @NotNull(message = "是否启用不能为空")
-        @Schema(description = "是否启用")
-        private Integer enabled;
 
         @NotNull(message = "权重系数不能为空")
         @Schema(description = "权重系数(1-10)", minimum = "1", maximum = "10")

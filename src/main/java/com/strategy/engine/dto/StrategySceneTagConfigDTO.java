@@ -8,11 +8,11 @@ import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 
 /**
- * 场景标签关联配置 DTO
+ * 场景标签关联配置 DTO（单独配置标签接口使用，含 sceneId）
  */
 @Data
 @Schema(description = "场景标签关联配置对象")
-public class SceneTagConfigDTO {
+public class StrategySceneTagConfigDTO {
 
     @NotNull(message = "场景ID不能为空")
     @Schema(description = "场景ID", requiredMode = Schema.RequiredMode.REQUIRED)
@@ -21,10 +21,6 @@ public class SceneTagConfigDTO {
     @NotNull(message = "标签ID不能为空")
     @Schema(description = "标签ID", requiredMode = Schema.RequiredMode.REQUIRED)
     private Long tagId;
-
-    @NotNull(message = "启用状态不能为空")
-    @Schema(description = "是否启用：0-否, 1-是", requiredMode = Schema.RequiredMode.REQUIRED)
-    private Integer enabled;
 
     @NotNull(message = "权重系数不能为空")
     @Min(value = 1, message = "权重系数最小为1")

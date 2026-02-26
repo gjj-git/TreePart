@@ -11,7 +11,7 @@ import javax.validation.constraints.NotNull;
  */
 @Data
 @Schema(description = "标签规则请求对象")
-public class TagRuleDTO {
+public class StrategyTagRuleDTO {
 
     @Schema(description = "标签ID（更新时必填）")
     private Long id;

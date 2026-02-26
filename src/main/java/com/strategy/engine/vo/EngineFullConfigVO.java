@@ -26,7 +26,7 @@ public class EngineFullConfigVO {
      * Tab 2: 标签规则列表
      */
     @Schema(description = "标签规则列表")
-    private List<TagRuleVO> tags;
+    private List<StrategyTagRuleVO> tags;
 
     /**
      * Tab 3: 场景策略列表
@@ -86,13 +86,10 @@ public class EngineFullConfigVO {
         @Schema(description = "场景说明")
         private String description;
 
-        @Schema(description = "状态")
-        private Integer status;
-
         @Schema(description = "创建时间")
         private LocalDateTime createdTime;
 
         @Schema(description = "场景关联的标签配置")
-        private List<SceneTagVO> tagConfigs;
+        private List<StrategySceneTagVO> tagConfigs;
     }
 }

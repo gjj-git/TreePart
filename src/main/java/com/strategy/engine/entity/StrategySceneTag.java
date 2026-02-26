@@ -7,8 +7,8 @@ import lombok.Data;
  * 场景标签关联实体（权重配置）
  */
 @Data
-@TableName("scene_tag_relation")
-public class SceneTagRelation {
+@TableName("strategy_scene_tag")
+public class StrategySceneTag {
 
     @TableId(type = IdType.AUTO)
     private Long id;
@@ -22,11 +22,6 @@ public class SceneTagRelation {
      * 标签ID
      */
     private Long tagId;
-
-    /**
-     * 是否启用：0-否, 1-是
-     */
-    private Integer enabled;
 
     /**
      * 权重系数（1-10）

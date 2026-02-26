@@ -21,7 +21,9 @@ public class RuleNode {
     // -------- group 专属 --------
 
     /**
-     * 逻辑运算符：AND / OR（type=group 时有效）
+     * 运算符：
+     * type=group     时表示逻辑运算符：AND / OR
+     * type=condition 时表示比较运算符：= != > >= < <= CONTAINS NOT_CONTAINS IN NOT_IN
      */
     private String operator;
 
@@ -36,11 +38,6 @@ public class RuleNode {
      * 字段名（type=condition 时有效）
      */
     private String field;
-
-    /**
-     * 比较操作符：= != > < >= <= CONTAINS IN（type=condition 时有效）
-     */
-    private String conditionOperator;
 
     /**
      * 比较值（type=condition 时有效）

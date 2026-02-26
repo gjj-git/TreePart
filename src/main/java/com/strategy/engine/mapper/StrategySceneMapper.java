@@ -1,12 +1,12 @@
 package com.strategy.engine.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.strategy.engine.entity.TagRule;
+import com.strategy.engine.entity.StrategyScene;
 import org.apache.ibatis.annotations.Mapper;
 
 /**
- * 标签规则 Mapper
+ * 场景策略 Mapper
  */
 @Mapper
-public interface TagRuleMapper extends BaseMapper<TagRule> {
+public interface StrategySceneMapper extends BaseMapper<StrategyScene> {
 }

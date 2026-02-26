@@ -4,19 +4,19 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.strategy.engine.dto.EngineFullConfigDTO;
-import com.strategy.engine.entity.SceneStrategy;
-import com.strategy.engine.entity.SceneTagRelation;
 import com.strategy.engine.entity.StrategyEngine;
-import com.strategy.engine.entity.TagRule;
+import com.strategy.engine.entity.StrategyScene;
+import com.strategy.engine.entity.StrategySceneTag;
+import com.strategy.engine.entity.StrategyTagRule;
 import com.strategy.engine.exception.BusinessException;
-import com.strategy.engine.mapper.SceneStrategyMapper;
-import com.strategy.engine.mapper.SceneTagRelationMapper;
 import com.strategy.engine.mapper.StrategyEngineMapper;
-import com.strategy.engine.mapper.TagRuleMapper;
+import com.strategy.engine.mapper.StrategySceneMapper;
+import com.strategy.engine.mapper.StrategySceneTagMapper;
+import com.strategy.engine.mapper.StrategyTagRuleMapper;
 import com.strategy.engine.service.EngineFullConfigService;
 import com.strategy.engine.vo.EngineFullConfigVO;
-import com.strategy.engine.vo.SceneTagVO;
-import com.strategy.engine.vo.TagRuleVO;
+import com.strategy.engine.vo.StrategySceneTagVO;
+import com.strategy.engine.vo.StrategyTagRuleVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -37,9 +37,9 @@ import java.util.stream.Collectors;
 public class EngineFullConfigServiceImpl implements EngineFullConfigService {
 
     private final StrategyEngineMapper engineMapper;
-    private final TagRuleMapper tagRuleMapper;
-    private final SceneStrategyMapper sceneStrategyMapper;
-    private final SceneTagRelationMapper sceneTagRelationMapper;
+    private final StrategyTagRuleMapper strategyTagRuleMapper;
+    private final StrategySceneMapper strategySceneMapper;
+    private final StrategySceneTagMapper strategySceneTagMapper;
 
     @Override
     public EngineFullConfigVO getFullConfig(Long engineId) {
@@ -57,37 +57,36 @@ public class EngineFullConfigServiceImpl implements EngineFullConfigService {
         vo.setBasicInfo(basicInfo);
 
         // 3. 查询标签列表
-        LambdaQueryWrapper<TagRule> tagWrapper = new LambdaQueryWrapper<>();
-        tagWrapper.eq(TagRule::getEngineId, engineId).orderByDesc(TagRule::getCreatedTime);
-        List<TagRule> tags = tagRuleMapper.selectList(tagWrapper);
-        vo.setTags(tags.stream().map(tag -> BeanUtil.copyProperties(tag, TagRuleVO.class)).collect(Collectors.toList()));
+        LambdaQueryWrapper<StrategyTagRule> tagWrapper = new LambdaQueryWrapper<>();
+        tagWrapper.eq(StrategyTagRule::getEngineId, engineId).orderByDesc(StrategyTagRule::getCreatedTime);
+        List<StrategyTagRule> tags = strategyTagRuleMapper.selectList(tagWrapper);
+        vo.setTags(tags.stream().map(tag -> BeanUtil.copyProperties(tag, StrategyTagRuleVO.class)).collect(Collectors.toList()));
 
         // 4. 查询场景列表及其标签配置
-        LambdaQueryWrapper<SceneStrategy> sceneWrapper = new LambdaQueryWrapper<>();
-        sceneWrapper.eq(SceneStrategy::getEngineId, engineId).orderByDesc(SceneStrategy::getCreatedTime);
-        List<SceneStrategy> scenes = sceneStrategyMapper.selectList(sceneWrapper);
+        LambdaQueryWrapper<StrategyScene> sceneWrapper = new LambdaQueryWrapper<>();
+        sceneWrapper.eq(StrategyScene::getEngineId, engineId).orderByDesc(StrategyScene::getCreatedTime);
+        List<StrategyScene> scenes = strategySceneMapper.selectList(sceneWrapper);
 
         List<EngineFullConfigVO.SceneWithTagsVO> sceneVOs = new ArrayList<>();
-        for (SceneStrategy scene : scenes) {
+        for (StrategyScene scene : scenes) {
             EngineFullConfigVO.SceneWithTagsVO sceneVO = BeanUtil.copyProperties(scene, EngineFullConfigVO.SceneWithTagsVO.class);
 
             // 查询场景的标签配置
-            LambdaQueryWrapper<SceneTagRelation> relationWrapper = new LambdaQueryWrapper<>();
-            relationWrapper.eq(SceneTagRelation::getSceneId, scene.getId());
-            List<SceneTagRelation> relations = sceneTagRelationMapper.selectList(relationWrapper);
+            LambdaQueryWrapper<StrategySceneTag> relationWrapper = new LambdaQueryWrapper<>();
+            relationWrapper.eq(StrategySceneTag::getSceneId, scene.getId());
+            List<StrategySceneTag> relations = strategySceneTagMapper.selectList(relationWrapper);
 
             // 获取标签名称映射
             if (!relations.isEmpty()) {
-                List<Long> tagIds = relations.stream().map(SceneTagRelation::getTagId).collect(Collectors.toList());
-                List<TagRule> sceneTags = tagRuleMapper.selectBatchIds(tagIds);
-                Map<Long, String> tagNameMap = sceneTags.stream().collect(Collectors.toMap(TagRule::getId, TagRule::getName));
+                List<Long> tagIds = relations.stream().map(StrategySceneTag::getTagId).collect(Collectors.toList());
+                List<StrategyTagRule> sceneTags = strategyTagRuleMapper.selectBatchIds(tagIds);
+                Map<Long, String> tagNameMap = sceneTags.stream().collect(Collectors.toMap(StrategyTagRule::getId, StrategyTagRule::getName));
 
-                List<SceneTagVO> tagConfigs = relations.stream().map(relation -> {
-                    SceneTagVO tagVO = new SceneTagVO();
+                List<StrategySceneTagVO> tagConfigs = relations.stream().map(relation -> {
+                    StrategySceneTagVO tagVO = new StrategySceneTagVO();
                     tagVO.setId(relation.getId());
                     tagVO.setTagId(relation.getTagId());
                     tagVO.setTagName(tagNameMap.get(relation.getTagId()));
-                    tagVO.setEnabled(relation.getEnabled());
                     tagVO.setWeightCoefficient(relation.getWeightCoefficient());
                     return tagVO;
                 }).collect(Collectors.toList());
@@ -137,27 +136,27 @@ public class EngineFullConfigServiceImpl implements EngineFullConfigService {
             for (EngineFullConfigDTO.TagRuleItem tagItem : dto.getTags()) {
                 if ("delete".equals(tagItem.getAction()) && tagItem.getId() != null) {
                     // 删除标签
-                    tagRuleMapper.deleteById(tagItem.getId());
+                    strategyTagRuleMapper.deleteById(tagItem.getId());
                     // 同时删除相关的场景标签关联
-                    LambdaQueryWrapper<SceneTagRelation> deleteWrapper = new LambdaQueryWrapper<>();
-                    deleteWrapper.eq(SceneTagRelation::getTagId, tagItem.getId());
-                    sceneTagRelationMapper.delete(deleteWrapper);
+                    LambdaQueryWrapper<StrategySceneTag> deleteWrapper = new LambdaQueryWrapper<>();
+                    deleteWrapper.eq(StrategySceneTag::getTagId, tagItem.getId());
+                    strategySceneTagMapper.delete(deleteWrapper);
                 } else if ("update".equals(tagItem.getAction()) && tagItem.getId() != null) {
                     // 更新已有标签
-                    TagRule tag = tagRuleMapper.selectById(tagItem.getId());
+                    StrategyTagRule tag = strategyTagRuleMapper.selectById(tagItem.getId());
                     if (tag != null) {
                         BeanUtil.copyProperties(tagItem, tag, "id", "engineId", "createdTime", "updatedTime", "deleted");
-                        tagRuleMapper.updateById(tag);
+                        strategyTagRuleMapper.updateById(tag);
                         if (StrUtil.isNotBlank(tagItem.getTempId())) {
                             tempIdToRealIdMap.put(tagItem.getTempId(), tag.getId());
                         }
                     }
                 } else if ("add".equals(tagItem.getAction())) {
                     // 新增标签
-                    TagRule newTag = BeanUtil.copyProperties(tagItem, TagRule.class);
+                    StrategyTagRule newTag = BeanUtil.copyProperties(tagItem, StrategyTagRule.class);
                     newTag.setEngineId(engineId);
                     newTag.setId(null);
-                    tagRuleMapper.insert(newTag);
+                    strategyTagRuleMapper.insert(newTag);
                     if (StrUtil.isNotBlank(tagItem.getTempId())) {
                         tempIdToRealIdMap.put(tagItem.getTempId(), newTag.getId());
                     }
@@ -172,27 +171,27 @@ public class EngineFullConfigServiceImpl implements EngineFullConfigService {
 
                 if ("delete".equals(sceneItem.getAction()) && sceneItem.getId() != null) {
                     // 删除场景
-                    sceneStrategyMapper.deleteById(sceneItem.getId());
+                    strategySceneMapper.deleteById(sceneItem.getId());
                     // 删除场景的标签关联
-                    LambdaQueryWrapper<SceneTagRelation> deleteWrapper = new LambdaQueryWrapper<>();
-                    deleteWrapper.eq(SceneTagRelation::getSceneId, sceneItem.getId());
-                    sceneTagRelationMapper.delete(deleteWrapper);
+                    LambdaQueryWrapper<StrategySceneTag> deleteWrapper = new LambdaQueryWrapper<>();
+                    deleteWrapper.eq(StrategySceneTag::getSceneId, sceneItem.getId());
+                    strategySceneTagMapper.delete(deleteWrapper);
                     continue;
                 } else if ("update".equals(sceneItem.getAction()) && sceneItem.getId() != null) {
                     // 更新已有场景
-                    SceneStrategy scene = sceneStrategyMapper.selectById(sceneItem.getId());
+                    StrategyScene scene = strategySceneMapper.selectById(sceneItem.getId());
                     if (scene == null) {
                         throw new BusinessException("场景不存在: " + sceneItem.getId());
                     }
                     BeanUtil.copyProperties(sceneItem, scene, "id", "engineId", "createdTime", "updatedTime", "deleted");
-                    sceneStrategyMapper.updateById(scene);
+                    strategySceneMapper.updateById(scene);
                     sceneId = scene.getId();
                 } else if ("add".equals(sceneItem.getAction())) {
                     // 新增场景
-                    SceneStrategy newScene = BeanUtil.copyProperties(sceneItem, SceneStrategy.class);
+                    StrategyScene newScene = BeanUtil.copyProperties(sceneItem, StrategyScene.class);
                     newScene.setEngineId(engineId);
                     newScene.setId(null);
-                    sceneStrategyMapper.insert(newScene);
+                    strategySceneMapper.insert(newScene);
                     sceneId = newScene.getId();
                 } else {
                     continue;
@@ -201,9 +200,9 @@ public class EngineFullConfigServiceImpl implements EngineFullConfigService {
                 // 保存场景的标签配置
                 if (sceneItem.getTagConfigs() != null) {
                     // 先删除该场景的所有标签关联
-                    LambdaQueryWrapper<SceneTagRelation> deleteWrapper = new LambdaQueryWrapper<>();
-                    deleteWrapper.eq(SceneTagRelation::getSceneId, sceneId);
-                    sceneTagRelationMapper.delete(deleteWrapper);
+                    LambdaQueryWrapper<StrategySceneTag> deleteWrapper = new LambdaQueryWrapper<>();
+                    deleteWrapper.eq(StrategySceneTag::getSceneId, sceneId);
+                    strategySceneTagMapper.delete(deleteWrapper);
 
                     // 重新插入标签关联
                     for (EngineFullConfigDTO.SceneTagConfig tagConfig : sceneItem.getTagConfigs()) {
@@ -221,12 +220,11 @@ public class EngineFullConfigServiceImpl implements EngineFullConfigService {
                             throw new BusinessException("标签配置缺少tagId或tagTempId");
                         }
 
-                        SceneTagRelation relation = new SceneTagRelation();
+                        StrategySceneTag relation = new StrategySceneTag();
                         relation.setSceneId(sceneId);
                         relation.setTagId(tagId);
-                        relation.setEnabled(tagConfig.getEnabled());
                         relation.setWeightCoefficient(tagConfig.getWeightCoefficient());
-                        sceneTagRelationMapper.insert(relation);
+                        strategySceneTagMapper.insert(relation);
                     }
                 }
             }
@@ -279,14 +277,14 @@ public class EngineFullConfigServiceImpl implements EngineFullConfigService {
      */
     private void updateEngineStatistics(Long engineId) {
         // 统计标签数量
-        LambdaQueryWrapper<TagRule> tagWrapper = new LambdaQueryWrapper<>();
-        tagWrapper.eq(TagRule::getEngineId, engineId);
-        Long tagCount = tagRuleMapper.selectCount(tagWrapper);
+        LambdaQueryWrapper<StrategyTagRule> tagWrapper = new LambdaQueryWrapper<>();
+        tagWrapper.eq(StrategyTagRule::getEngineId, engineId);
+        Long tagCount = strategyTagRuleMapper.selectCount(tagWrapper);
 
         // 统计场景数量
-        LambdaQueryWrapper<SceneStrategy> sceneWrapper = new LambdaQueryWrapper<>();
-        sceneWrapper.eq(SceneStrategy::getEngineId, engineId);
-        Long sceneCount = sceneStrategyMapper.selectCount(sceneWrapper);
+        LambdaQueryWrapper<StrategyScene> sceneWrapper = new LambdaQueryWrapper<>();
+        sceneWrapper.eq(StrategyScene::getEngineId, engineId);
+        Long sceneCount = strategySceneMapper.selectCount(sceneWrapper);
 
         // 更新引擎
         StrategyEngine engine = new StrategyEngine();

@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
  */
 @Data
 @Schema(description = "标签规则响应对象")
-public class TagRuleVO {
+public class StrategyTagRuleVO {
 
     @Schema(description = "标签ID")
     private Long id;
