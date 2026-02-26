@@ -4,7 +4,7 @@
 |------|------|------|------|
 | v1.0 | 郭俊杰 | 2026-02-25 | 初稿 |
 | v1.1 | 郭俊杰 | 2026-02-25 | 修正引擎应用流程；删除场景匹配接口；补充标签条件与存储设计 |
-| v1.2 | 郭俊杰 | 2026-02-26 | 新增条件字段元数据（TagRuleField）模块；表名加 se_ 前缀；移除 scene_strategy.status 和 scene_tag_relation.enabled |
+| v1.2 | 郭俊杰 | 2026-02-26 | 新增条件字段元数据（StrategyTagField）模块；表名统一使用 strategy_ 前缀；移除 strategy_scene.status 和 strategy_scene_tag.enabled；Java 类名全部加 Strategy 前缀 |
 
 ---
 
@@ -41,10 +41,10 @@
 | 术语 | 说明 |
 |------|------|
 | 策略引擎（StrategyEngine） | 顶层配置单元，定义一套完整的标签规则 + 场景策略体系 |
-| 标签规则（TagRule） | 引擎下的一条诊断规则，通过条件树判断知识点是否命中某类学情，命中则打上对应标签 |
+| 标签规则（StrategyTagRule） | 引擎下的一条诊断规则，通过条件树判断知识点是否命中某类学情，命中则打上对应标签 |
 | 条件树（RuleConfig） | 以 JSON 表示的嵌套条件结构，叶节点为字段条件，非叶节点为 AND/OR 逻辑组合 |
-| 条件字段（TagRuleField） | 条件树叶节点中的判断字段元数据，如"考试掌握度"、"难度等级"等，按适用对象过滤后供前端规则编辑器使用 |
-| 场景策略（SceneStrategy） | 引擎下的一个教学目标定义，关联若干标签规则并设置权重系数 |
+| 条件字段（StrategyTagField） | 条件树叶节点中的判断字段元数据，如"考试掌握度"、"难度等级"等，按适用对象过滤后供前端规则编辑器使用 |
+| 场景策略（StrategyScene） | 引擎下的一个教学目标定义，关联若干标签规则并设置权重系数 |
 | 权重系数（WeightCoefficient） | 标签在所属场景中的重要程度，取值 1-10，参与知识点得分计算 |
 | 知识点得分 | 计算公式：`得分 = Σ (命中标签在此场景下的权重系数)` |
 | 默认引擎（isDefault） | 同一时刻只允许一个引擎处于默认状态 |
@@ -92,7 +92,7 @@
 
 ### 4.2 标签条件树结构
 
-条件树以 JSON 存储于 `tag_rule.rule_config`，由两种节点组成：
+条件树以 JSON 存储于 `strategy_tag_rule.rule_config`，由两种节点组成：
 
 **Group 节点**（逻辑组合）
 
@@ -118,9 +118,9 @@
 
 > `RuleMatchEngine` 递归求值：Group 节点按 AND/OR 聚合子结果，Condition 节点从 dataMap 取值后按运算符比较，数值比较使用 BigDecimal。
 
-### 4.3 条件字段元数据（TagRuleField）
+### 4.3 条件字段元数据（StrategyTagField）
 
-前端规则编辑器左侧字段库所需的字段列表由 `tag_rule_field` 表统一维护，支持按引擎适用对象过滤。
+前端规则编辑器左侧字段库所需的字段列表由 `strategy_tag_field` 表统一维护，支持按引擎适用对象过滤。
 
 **字段分类：**
 
@@ -138,7 +138,7 @@
 
 ```
 1. 查询引擎下所有场景 ID
-2. 物理删除 scene_tag_relation（WHERE scene_id IN (...)）
+2. 物理删除 strategy_scene_tag（WHERE scene_id IN (...)）
 3. 逻辑删除所有场景
 4. 逻辑删除所有标签规则
 5. 逻辑删除引擎
@@ -146,7 +146,7 @@
 
 #### 标签禁用/删除保护
 
-操作前查询 `scene_tag_relation WHERE tag_id = {id}`，若 count > 0 则拒绝并提示"该标签正在被 N 个场景使用"。
+操作前查询 `strategy_scene_tag WHERE tag_id = {id}`，若 count > 0 则拒绝并提示"该标签正在被 N 个场景使用"。
 
 #### 场景标签关联保存（全量替换）
 
@@ -171,12 +171,12 @@ tags = [...]  → 先物理删除现有关联，再批量 INSERT
 ### 5.1 ER 关系
 
 ```
-strategy_engine (1) ──── (N) tag_rule
+strategy_engine (1) ──── (N) strategy_tag_rule
        │
-       └──── (N) scene_strategy (N) ──── (N) tag_rule
-                       通过 scene_tag_relation 关联，额外记录 enabled + weight_coefficient
+       └──── (N) strategy_scene (N) ──── (N) strategy_tag_rule
+                       通过 strategy_scene_tag 关联，额外记录 weight_coefficient
 
-tag_rule_field  （独立元数据表，不与其他表关联）
+strategy_tag_field  （独立元数据表，不与其他表关联）
 ```
 
 ### 5.2 表结构
@@ -197,7 +197,7 @@ tag_rule_field  （独立元数据表，不与其他表关联）
 | created_time / updated_time | datetime | 自动维护 |
 | deleted | tinyint(1) | 逻辑删除，默认 0 |
 
-#### tag_rule
+#### strategy_tag_rule
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
@@ -209,7 +209,7 @@ tag_rule_field  （独立元数据表，不与其他表关联）
 | status | tinyint(1) | 0-禁用 1-启用 |
 | created_time / updated_time / deleted | - | 同上 |
 
-#### scene_strategy
+#### strategy_scene
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
@@ -217,22 +217,20 @@ tag_rule_field  （独立元数据表，不与其他表关联）
 | engine_id | bigint | 所属引擎 |
 | name | varchar(100) | 场景名称 |
 | description | varchar(500) | 场景说明 |
-| status | tinyint(1) | 0-禁用 1-启用 |
 | created_time / updated_time / deleted | - | 同上 |
 
-#### scene_tag_relation
+#### strategy_scene_tag
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
 | id | bigint PK | 主键 |
 | scene_id | bigint | 场景 ID |
 | tag_id | bigint | 标签规则 ID |
-| enabled | tinyint(1) | 该关联是否启用 |
 | weight_coefficient | int | 权重系数 1-10 |
 
 > 无逻辑删除字段，所有删除均为物理删除。唯一索引：`uk_scene_tag(scene_id, tag_id)`。
 
-#### tag_rule_field
+#### strategy_tag_field
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
@@ -300,7 +298,6 @@ tag_rule_field  （独立元数据表，不与其他表关联）
 | POST | / | 创建场景（可同时配置标签关联） |
 | PUT | / | 更新场景（tags=null 不动关联；tags=[] 清空；tags=[...] 全量替换） |
 | DELETE | /{id} | 删除场景（级联删除标签关联） |
-| PUT | /{id}/toggleStatus | 切换状态 |
 | POST | /{sceneId}/tags | 单独配置场景标签关联（全量替换） |
 
 ### 6.4 条件字段管理 `/api/field`
@@ -349,25 +346,29 @@ tag_rule_field  （独立元数据表，不与其他表关联）
 src/main/java/com/strategy/engine/
 ├── common/          Result.java
 ├── config/          MyMetaObjectHandler.java
-├── controller/      StrategyEngineController  TagRuleController
-│                    SceneStrategyController   TagRuleFieldController
+├── controller/      StrategyEngineController    StrategyTagRuleController
+│                    StrategySceneController     StrategyTagFieldController
 │                    EngineFullConfigController（备用）
-├── dto/             StrategyEngineDTO  StrategyEngineQueryDTO  TagRuleDTO
-│                    SceneStrategyDTO   SceneTagConfigDTO       SceneTagItemDTO
-│                    TagRuleFieldDTO    EngineFullConfigDTO
-├── entity/          StrategyEngine  TagRule  SceneStrategy
-│                    SceneTagRelation  TagRuleField
+├── dto/             StrategyEngineDTO           StrategyEngineQueryDTO
+│                    StrategyTagRuleDTO          StrategySceneDTO
+│                    StrategySceneTagItemDTO     StrategySceneTagConfigDTO
+│                    StrategyTagFieldDTO         EngineFullConfigDTO
+├── entity/          StrategyEngine  StrategyTagRule  StrategyScene
+│                    StrategySceneTag  StrategyTagField
 ├── enums/           EngineType  ApplicableObject  StatusEnum
 ├── exception/       BusinessException  GlobalExceptionHandler
-├── mapper/          StrategyEngineMapper  TagRuleMapper  SceneStrategyMapper
-│                    SceneTagRelationMapper  TagRuleFieldMapper
+├── mapper/          StrategyEngineMapper        StrategyTagRuleMapper
+│                    StrategySceneMapper         StrategySceneTagMapper
+│                    StrategyTagFieldMapper
 ├── rule/            RuleMatchEngine（条件树求值，供调用方集成）  RuleNode
-├── service/         StrategyEngineService  TagRuleService  SceneStrategyService
-│                    TagRuleFieldService    EngineFullConfigService（备用）
+├── service/         StrategyEngineService       StrategyTagRuleService
+│                    StrategySceneService        StrategyTagFieldService
+│                    EngineFullConfigService（备用）
 │   └── impl/        （各 ServiceImpl）
-└── vo/              StrategyEngineVO  TagRuleVO  SceneStrategyVO  SceneTagVO
-                     TagUsageVO  TagRuleFieldVO  TagRuleFieldGroupVO
-                     EngineFullConfigVO
+└── vo/              StrategyEngineVO            StrategyTagRuleVO
+                     StrategySceneVO             StrategySceneTagVO
+                     StrategyTagFieldVO          StrategyTagFieldGroupVO
+                     TagUsageVO                  EngineFullConfigVO
 
 src/main/resources/
 ├── application.yml
