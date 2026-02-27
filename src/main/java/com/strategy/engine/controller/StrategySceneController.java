@@ -3,7 +3,7 @@ package com.strategy.engine.controller;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.strategy.engine.common.Result;
 import com.strategy.engine.dto.StrategySceneDTO;
-import com.strategy.engine.dto.StrategySceneTagConfigDTO;
+import com.strategy.engine.dto.StrategySceneTagItemDTO;
 import com.strategy.engine.service.StrategySceneService;
 import com.strategy.engine.vo.StrategySceneVO;
 import io.swagger.v3.oas.annotations.Operation;
@@ -71,7 +71,7 @@ public class StrategySceneController {
     @PostMapping("/{sceneId}/tags")
     public Result<Void> configSceneTags(
             @Parameter(description = "场景ID") @PathVariable Long sceneId,
-            @Validated @RequestBody List<StrategySceneTagConfigDTO> configs) {
+            @Validated @RequestBody List<StrategySceneTagItemDTO> configs) {
         strategySceneService.configSceneTags(sceneId, configs);
         return Result.success("配置成功", null);
     }

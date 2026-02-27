@@ -6,8 +6,8 @@ import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * 规则条件树匹配引擎
@@ -112,11 +112,13 @@ public class RuleMatchEngine {
                 return !dataValue.contains(ruleValue);
             case "IN":
                 // ruleValue 格式：val1,val2,val3
-                List<String> values = Arrays.asList(ruleValue.split(","));
-                return values.contains(dataValue);
+                return Arrays.stream(ruleValue.split(","))
+                        .map(String::trim)
+                        .anyMatch(dataValue::equals);
             case "NOT_IN":
-                List<String> notValues = Arrays.asList(ruleValue.split(","));
-                return !notValues.contains(dataValue);
+                return Arrays.stream(ruleValue.split(","))
+                        .map(String::trim)
+                        .noneMatch(dataValue::equals);
             default:
                 return false;
         }

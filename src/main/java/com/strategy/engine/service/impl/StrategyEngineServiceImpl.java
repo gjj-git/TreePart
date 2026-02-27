@@ -93,6 +93,9 @@ public class StrategyEngineServiceImpl implements StrategyEngineService {
         if (engine == null) {
             throw new BusinessException("引擎不存在");
         }
+        if (engine.getIsDefault() != null && engine.getIsDefault() == 1) {
+            throw new BusinessException("默认引擎不能删除，请先取消默认状态");
+        }
 
         LambdaQueryWrapper<StrategyScene> sceneWrapper = new LambdaQueryWrapper<>();
         sceneWrapper.eq(StrategyScene::getEngineId, id);
@@ -133,14 +136,7 @@ public class StrategyEngineServiceImpl implements StrategyEngineService {
         if (engine == null) {
             throw new BusinessException("引擎不存在");
         }
-        LambdaUpdateWrapper<StrategyEngine> cancelWrapper = new LambdaUpdateWrapper<>();
-        cancelWrapper.set(StrategyEngine::getIsDefault, 0);
-        strategyEngineMapper.update(null, cancelWrapper);
-
-        LambdaUpdateWrapper<StrategyEngine> setWrapper = new LambdaUpdateWrapper<>();
-        setWrapper.eq(StrategyEngine::getId, id)
-                .set(StrategyEngine::getIsDefault, 1);
-        strategyEngineMapper.update(null, setWrapper);
+        strategyEngineMapper.atomicSetDefault(id);
     }
 
     @Override

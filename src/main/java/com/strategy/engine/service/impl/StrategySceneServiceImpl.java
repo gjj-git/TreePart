@@ -5,7 +5,6 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.strategy.engine.dto.StrategySceneDTO;
-import com.strategy.engine.dto.StrategySceneTagConfigDTO;
 import com.strategy.engine.dto.StrategySceneTagItemDTO;
 import com.strategy.engine.entity.StrategyEngine;
 import com.strategy.engine.entity.StrategyScene;
@@ -26,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -135,25 +135,12 @@ public class StrategySceneServiceImpl implements StrategySceneService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void configSceneTags(Long sceneId, List<StrategySceneTagConfigDTO> configs) {
+    public void configSceneTags(Long sceneId, List<StrategySceneTagItemDTO> configs) {
         StrategyScene scene = strategySceneMapper.selectById(sceneId);
         if (scene == null) {
             throw new BusinessException("场景不存在");
         }
-        LambdaQueryWrapper<StrategySceneTag> deleteWrapper = new LambdaQueryWrapper<>();
-        deleteWrapper.eq(StrategySceneTag::getSceneId, sceneId);
-        strategySceneTagMapper.delete(deleteWrapper);
-        if (!configs.isEmpty()) {
-            List<StrategySceneTag> relations = new ArrayList<>();
-            for (StrategySceneTagConfigDTO config : configs) {
-                StrategySceneTag relation = new StrategySceneTag();
-                relation.setSceneId(sceneId);
-                relation.setTagId(config.getTagId());
-                relation.setWeightCoefficient(config.getWeightCoefficient());
-                relations.add(relation);
-            }
-            strategySceneTagMapper.insertBatch(relations);
-        }
+        saveTagRelations(sceneId, configs);
     }
 
     private void saveTagRelations(Long sceneId, List<StrategySceneTagItemDTO> tags) {
@@ -161,6 +148,7 @@ public class StrategySceneServiceImpl implements StrategySceneService {
         deleteWrapper.eq(StrategySceneTag::getSceneId, sceneId);
         strategySceneTagMapper.delete(deleteWrapper);
         if (tags != null && !tags.isEmpty()) {
+            validateTagIds(tags);
             List<StrategySceneTag> relations = new ArrayList<>();
             for (StrategySceneTagItemDTO item : tags) {
                 StrategySceneTag relation = new StrategySceneTag();
@@ -170,6 +158,25 @@ public class StrategySceneServiceImpl implements StrategySceneService {
                 relations.add(relation);
             }
             strategySceneTagMapper.insertBatch(relations);
+        }
+    }
+
+    /**
+     * 验证标签ID列表中的所有标签是否存在
+     */
+    private void validateTagIds(List<StrategySceneTagItemDTO> tags) {
+        Set<Long> tagIds = tags.stream()
+                .map(StrategySceneTagItemDTO::getTagId)
+                .collect(Collectors.toSet());
+        List<StrategyTagRule> existingTags = strategyTagRuleMapper.selectBatchIds(tagIds);
+        if (existingTags.size() != tagIds.size()) {
+            Set<Long> existingIds = existingTags.stream()
+                    .map(StrategyTagRule::getId)
+                    .collect(Collectors.toSet());
+            Set<Long> invalidIds = tagIds.stream()
+                    .filter(id -> !existingIds.contains(id))
+                    .collect(Collectors.toSet());
+            throw new BusinessException("以下标签ID不存在: " + invalidIds);
         }
     }
 

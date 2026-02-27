@@ -351,7 +351,7 @@ src/main/java/com/strategy/engine/
 │                    EngineFullConfigController（备用）
 ├── dto/             StrategyEngineDTO           StrategyEngineQueryDTO
 │                    StrategyTagRuleDTO          StrategySceneDTO
-│                    StrategySceneTagItemDTO     StrategySceneTagConfigDTO
+│                    StrategySceneTagItemDTO
 │                    StrategyTagFieldDTO         EngineFullConfigDTO
 ├── entity/          StrategyEngine  StrategyTagRule  StrategyScene
 │                    StrategySceneTag  StrategyTagField

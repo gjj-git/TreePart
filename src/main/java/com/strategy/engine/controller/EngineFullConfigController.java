@@ -31,8 +31,8 @@ import org.springframework.web.bind.annotation.*;
  * </ul>
  *
  * @see com.strategy.engine.controller.StrategyEngineController 引擎管理（分步保存）
- * @see com.strategy.engine.controller.TagRuleController 标签管理（分步保存）
- * @see com.strategy.engine.controller.SceneStrategyController 场景管理（分步保存）
+ * @see com.strategy.engine.controller.StrategyTagRuleController 标签管理（分步保存）
+ * @see com.strategy.engine.controller.StrategySceneController 场景管理（分步保存）
  */
 @Tag(name = "【备用】引擎完整配置管理（统一保存）")
 @RestController

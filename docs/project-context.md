@@ -197,11 +197,8 @@ boolean match(String ruleConfigJson, Map<String, String> dataMap)
 ### StrategySceneDTO（创建/更新场景）
 `id`（更新时必填）、`engineId`*、`name`*、`description`、`tags`（List\<StrategySceneTagItemDTO\>，可null）
 
-### StrategySceneTagItemDTO（嵌入场景请求的标签条目）
+### StrategySceneTagItemDTO（场景标签配置条目，用于场景创建/更新和独立配置接口）
 `tagId`*、`weightCoefficient`*（1-10）
-
-### StrategySceneTagConfigDTO（独立配置场景标签接口）
-`sceneId`*、`tagId`*、`weightCoefficient`*（1-10）
 
 ### StrategyTagFieldDTO（创建/更新字段）
 `id`（更新时必填）、`fieldKey`*、`fieldName`*、`category`*、`dataType`*、`operators`*、`applicableObjects`*、`sort`、`status`*

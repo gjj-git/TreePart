@@ -4,6 +4,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 import javax.validation.Valid;
+import javax.validation.constraints.Max;
+import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import java.util.List;
@@ -131,6 +133,8 @@ public class EngineFullConfigDTO {
         private Long tagId;
 
         @NotNull(message = "权重系数不能为空")
+        @Min(value = 1, message = "权重系数最小为1")
+        @Max(value = 10, message = "权重系数最大为10")
         @Schema(description = "权重系数(1-10)", minimum = "1", maximum = "10")
         private Integer weightCoefficient;
     }

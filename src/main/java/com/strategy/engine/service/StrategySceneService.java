@@ -2,7 +2,7 @@ package com.strategy.engine.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.strategy.engine.dto.StrategySceneDTO;
-import com.strategy.engine.dto.StrategySceneTagConfigDTO;
+import com.strategy.engine.dto.StrategySceneTagItemDTO;
 import com.strategy.engine.vo.StrategySceneVO;
 
 import java.util.List;
@@ -26,5 +26,5 @@ public interface StrategySceneService {
 
     void batchDeleteByEngineId(Long engineId);
 
-    void configSceneTags(Long sceneId, List<StrategySceneTagConfigDTO> configs);
+    void configSceneTags(Long sceneId, List<StrategySceneTagItemDTO> configs);
 }
