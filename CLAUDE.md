@@ -1,75 +1,96 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+本文件为 Claude Code 提供项目引导信息，每次对话开始时自动读取。
 
-## Build & Run Commands
+## 沟通语言规范
 
-```bash
-# Build (skip tests)
-mvn clean package -DskipTests
-
-# Run the application
-mvn spring-boot:run
-
-# Run all tests
-mvn test
-
-# Run a single test class
-mvn test -Dtest=YourTestClassName
-
-# Build and run the JAR directly
-java -jar target/strategy-engine-management-1.0.0.jar
-```
-
-**Prerequisites**: MySQL running at `localhost:3306`, database `strategy_engine` initialized via `src/main/resources/sql/schema.sql`. Default credentials: root/root.
-
-**Swagger UI**: `http://localhost:8080/api/swagger-ui.html`
+- 与用户的所有沟通、说明、分析输出默认使用**中文**
+- 代码中的变量名、类名、方法名保持**英文**（符合 Java 命名规范）
+- CLAUDE.md 及项目文档使用**中文**
 
 ---
 
-## Architecture Overview
+## 文档维护规则
 
-This is a **configuration management backend** for a knowledge-point scoring engine used in education. The system stores rules and weights; the actual scoring is done by the caller, not this service.
+- **CLAUDE.md（本文件）**：每次代码改动编译通过后自动更新，保持与代码实际状态同步，确保新对话的上下文准确。
+- **docs/strategy-engine-design.md**：仅在用户明确要求时更新（如"更新设计文档"）。这是面向人阅读的正式设计文档，只反映用户已验收的变更。
 
-### Data flow (caller's perspective)
-1. Caller fetches enabled tag rules: `GET /api/tag/list/{engineId}/enabled` (returns `ruleConfig` JSON trees)
-2. Caller fetches scene weight configs: `GET /api/scene/list/{engineId}`
-3. For each knowledge point, caller invokes `RuleMatchEngine.match(ruleConfigJson, dataMap)` to determine which tags apply
-4. Score = Σ (matched tag's `weightCoefficient` in that scene)
+---
 
-### Three-layer hierarchy
+## 构建与运行命令
+
+```bash
+# 构建（跳过测试）
+mvn clean package -DskipTests
+
+# 运行应用
+mvn spring-boot:run
+
+# 运行所有测试
+mvn test
+
+# 运行指定测试类
+mvn test -Dtest=YourTestClassName
+
+# 直接运行 JAR
+java -jar target/strategy-engine-management-1.0.0.jar
 ```
-StrategyEngine (引擎)
-  └── StrategyTagRule (标签规则) — has ruleConfig JSON (condition tree)
-  └── StrategyScene (场景)
-        └── StrategySceneTag (scene↔tag join, stores weightCoefficient 1-10)
-```
-`StrategyTagField` is an independent metadata table that provides the field library for the frontend rule editor — it has no FK relationships to other tables.
 
-### Package structure
+**前置条件**：MySQL 运行在 `localhost:3306`，数据库 `strategy_engine` 通过 `src/main/resources/sql/schema.sql` 初始化。默认账号：root/root。
+
+**Swagger UI**：`http://localhost:8080/api/swagger-ui.html`
+
+---
+
+## 架构概览
+
+本项目是教育场景知识点优先级计算引擎的**配置管理后端**。系统只负责存储规则和权重，实际的打标签与计分由调用方完成。
+
+### 调用方使用流程
+
+1. 获取启用的标签规则：`GET /api/tag/list/{engineId}/enabled`（返回含 `ruleConfig` JSON 的规则列表）
+2. 获取场景权重配置：`GET /api/scene/list/{engineId}`
+3. 对每个知识点调用 `RuleMatchEngine.match(ruleConfigJson, dataMap)` 判断命中哪些标签
+4. 得分 = Σ（命中标签在该场景下的权重系数）
+
+### 三层数据结构
+
+```
+StrategyEngine（策略引擎）
+  └── StrategyTagRule（标签规则）— 包含条件树 ruleConfig JSON
+  └── StrategyScene（场景策略）
+        └── StrategySceneTag（场景↔标签关联，存储 weightCoefficient 1-10）
+```
+
+`StrategyTagField` 是独立的字段元数据表，为前端规则编辑器提供字段库，与其他表无外键关联。
+
+### 包结构
+
 ```
 com.strategy.engine
-├── controller/    REST endpoints
-├── service/       Business logic interfaces + impls
-├── mapper/        MyBatis-Plus mappers (2 have custom SQL: StrategySceneTagMapper, StrategyTagFieldMapper)
-├── entity/        5 entities matching DB tables
-├── dto/           Request objects (with validation annotations)
-├── vo/            Response objects
-├── rule/          RuleMatchEngine + RuleNode — condition tree evaluator (standalone, no Spring dependencies)
-├── enums/         EngineType, ApplicableObject, StatusEnum
+├── controller/    REST 接口
+├── service/       业务逻辑接口 + 实现
+├── mapper/        MyBatis-Plus Mapper（2个有自定义SQL：StrategySceneTagMapper、StrategyTagFieldMapper）
+├── entity/        5个实体类，对应数据库表
+├── dto/           请求对象（含校验注解）
+├── vo/            响应对象
+├── rule/          RuleMatchEngine + RuleNode — 条件树求值器（独立模块，无 Spring 依赖）
+├── enums/         EngineType、ApplicableObject、StatusEnum
 └── exception/     BusinessException + GlobalExceptionHandler
 ```
 
-### Important design decisions
-- **`StrategyScene` has no `status` field** — scenes are either present or deleted, no enable/disable
-- **`StrategySceneTag` has no `enabled` field** — having the association means it is active
-- **`StrategySceneTag` uses physical delete** (no `deleted` column); all other main entities use logical delete via `deleted` field
-- **`StrategyTagField.operators` and `applicableObjects`** are MySQL JSON columns mapped to `List<String>` via `@TableName(autoResultMap=true)` + `JacksonTypeHandler`
-- **`tag_count` / `scene_count`** on `StrategyEngine` are denormalized counters, recalculated on every tag/scene add/delete
-- **`StrategySceneTagMapper.insertBatch`** is a custom `@Insert` with `<foreach>` — not a MyBatis-Plus built-in
-- **`EngineFullConfigController`** (`/api/engine-config`) is implemented but not the primary flow; it's a backup for batch save of all engine config in one request
+### 重要设计决策
 
-### `RuleMatchEngine` condition tree format
+- **`StrategyScene` 无 `status` 字段** — 场景要么存在要么删除，不需要启用/禁用
+- **`StrategySceneTag` 无 `enabled` 字段** — 有关联即生效，不需要额外开关
+- **`StrategySceneTag` 使用物理删除**（无 `deleted` 列），其他主要实体均使用 `deleted` 字段逻辑删除
+- **`StrategyTagField.operators` 和 `applicableObjects`** 是 MySQL JSON 列，通过 `@TableName(autoResultMap=true)` + `JacksonTypeHandler` 映射为 `List<String>`
+- **`tag_count` / `scene_count`** 是 `StrategyEngine` 上的冗余统计字段，每次标签/场景增删时重新 COUNT 写回
+- **`StrategySceneTagMapper.insertBatch`** 是自定义 `@Insert` + `<foreach>`，非 MyBatis-Plus 内置
+- **`EngineFullConfigController`**（`/api/engine-config`）已实现但非主流程，作为批量保存引擎完整配置的备用方案
+
+### RuleMatchEngine 条件树格式
+
 ```json
 {
   "type": "group",
@@ -80,32 +101,59 @@ com.strategy.engine
   ]
 }
 ```
-Supported operators: `=`/`EQ`, `!=`/`NEQ`, `>`/`GT`, `>=`/`GTE`, `<`/`LT`, `<=`/`LTE`, `CONTAINS`, `NOT_CONTAINS`, `IN`, `NOT_IN` (IN/NOT_IN values are comma-separated strings).
 
-### `StrategyTagField` filtering
-`StrategyTagFieldMapper.listByApplicableObject` uses `JSON_CONTAINS` to return fields where `applicable_objects` contains `"ALL"` or the engine's specific `applicableObject` value. Results are grouped into INHERENT → EXAM → COMPREHENSIVE by the service layer.
+支持的运算符：`=`/`EQ`、`!=`/`NEQ`、`>`/`GT`、`>=`/`GTE`、`<`/`LT`、`<=`/`LTE`、`CONTAINS`、`NOT_CONTAINS`、`IN`、`NOT_IN`（IN/NOT_IN 的值为逗号分隔字符串，匹配前会 trim 空格）。
 
-### Tag deletion/disable protection
-Before deleting or disabling a `StrategyTagRule`, the service checks `strategy_scene_tag WHERE tag_id = {id}`. If count > 0, it throws `BusinessException`.
+### StrategyTagField 字段过滤
 
-### Default engine uniqueness
-`setDefault` runs in a single transaction: first clears all `is_default = 0`, then sets the target to `is_default = 1`.
+`StrategyTagFieldMapper.listByApplicableObject` 使用 `JSON_CONTAINS` 返回 `applicable_objects` 包含 `"ALL"` 或当前引擎适用对象的字段，Service 层按 INHERENT → EXAM → COMPREHENSIVE 分组返回。
+
+### 标签删除/禁用保护
+
+删除或禁用 `StrategyTagRule` 前，Service 检查 `strategy_scene_tag WHERE tag_id = {id}`，若 count > 0 则抛出 `BusinessException`。
+
+### 默认引擎唯一性
+
+`setDefault` 使用单条原子 SQL 避免并发问题：
+
+```sql
+UPDATE strategy_engine SET is_default = CASE WHEN id = #{id} THEN 1 ELSE 0 END WHERE deleted = 0
+```
+
+一条语句同时完成"清除其他默认"和"设置目标默认"，无竞态窗口。
+
+### 按适用对象获取默认引擎
+
+`GET /api/engine/default?applicableObject=BUREAU` 查询 `WHERE is_default=1 AND applicable_object=?`。若全局默认引擎的适用对象与传入值不匹配，`data` 返回 `null`（HTTP 200），调用方自行降级处理。**策略：全局唯一默认，不做 per-applicableObject 独立默认。**
+
+### 枚举值接口
+
+`GET /api/engine/enums` 返回所有 `EngineType` 和 `ApplicableObject` 的 code + 中文 label，供前端下拉框使用。逻辑直接在 Controller 中实现，无需 Service 层。
 
 ---
 
-## Design Intent (from author)
+## 设计意图（作者说明）
 
-### Why scenes have no `status` field
+### 为什么场景没有 status 字段
+
 场景（Scene）不需要启用/禁用状态。场景要么存在、要么删除，不存在"暂时禁用某个场景"的需求。如果某个场景不再需要，直接删除即可。
 
-### Why `StrategySceneTag` has no `enabled` field
+### 为什么 StrategySceneTag 没有 enabled 字段
+
 场景与标签建立关联本身就代表该标签在此场景中生效，不需要额外的开关。"产生关联了就生效"，多余的 `enabled` 字段只会增加维护复杂度。
 
-### Table naming convention
-所有表名统一使用 `strategy_` 前缀（`strategy_engine`、`strategy_tag_rule`、`strategy_scene`、`strategy_scene_tag`、`strategy_tag_field`），一眼就能识别出属于策略引擎模块的表。Java 类名同样统一使用 `Strategy` 前缀（`StrategyEngine` 保持不变，其余均以 `Strategy` 开头）。
+### 表命名规范
 
-### `StrategyTagField` purpose
+所有表名统一使用 `strategy_` 前缀（`strategy_engine`、`strategy_tag_rule`、`strategy_scene`、`strategy_scene_tag`、`strategy_tag_field`），一眼就能识别出属于策略引擎模块的表。Java 类名同样统一使用 `Strategy` 前缀。
+
+### StrategyTagField 的用途
+
 条件字段元数据表（`strategy_tag_field`）是为了让前端规则编辑器的"字段库"可以由后台动态管理，而不是硬编码在前端。字段按适用对象（`applicable_objects` JSON 列）过滤，`["ALL"]` 表示所有引擎通用，其余值对应具体适用对象（STUDENT/CLASS 等）。字段分三类：INHERENT（知识点固有属性）、EXAM（单次考试维度）、COMPREHENSIVE（跨多次考试的综合维度）。
 
-### `EngineFullConfigController` status
+### EngineFullConfigController 状态
+
 `/api/engine-config` 已完整实现（支持一次性提交引擎基本信息 + 标签规则 + 场景配置），作为备用方案预留。当前主流程是分步操作（分别调用 engine/tag/scene 各自的接口）。若前端改为单页全量提交模式，可启用此 Controller 替代分步接口。
+
+### 已讨论并确认的设计决策（不再重复讨论）
+
+- **默认引擎是否按适用对象独立** → 项目经理决定：全局唯一默认，不做 per-applicableObject 独立默认，获取不到就返回 null，调用方自行降级。

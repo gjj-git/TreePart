@@ -5,6 +5,7 @@
 | v1.0 | 郭俊杰 | 2026-02-25 | 初稿 |
 | v1.1 | 郭俊杰 | 2026-02-25 | 修正引擎应用流程；删除场景匹配接口；补充标签条件与存储设计 |
 | v1.2 | 郭俊杰 | 2026-02-26 | 新增条件字段元数据（StrategyTagField）模块；表名统一使用 strategy_ 前缀；移除 strategy_scene.status 和 strategy_scene_tag.enabled；Java 类名全部加 Strategy 前缀 |
+| v1.3 | 郭俊杰 | 2026-02-27 | 新增枚举选项查询接口；新增按适用对象获取默认引擎接口；默认引擎设置改为原子 SQL |
 
 ---
 
@@ -158,7 +159,15 @@ tags = [...]  → 先物理删除现有关联，再批量 INSERT
 
 #### 默认引擎唯一性
 
-设置默认时：先 `UPDATE strategy_engine SET is_default = 0`（全部清除），再将目标引擎 `is_default = 1`，同一事务内保证唯一。
+设置默认时执行单条原子 SQL：
+
+```sql
+UPDATE strategy_engine
+SET is_default = CASE WHEN id = #{id} THEN 1 ELSE 0 END
+WHERE deleted = 0
+```
+
+一条语句同时完成"清除其他默认"和"设置目标默认"，避免并发下两步 UPDATE 产生多个默认引擎的竞态问题。
 
 #### 统计字段自动维护
 
@@ -270,8 +279,10 @@ strategy_tag_field  （独立元数据表，不与其他表关联）
 | PUT | / | 更新引擎 |
 | DELETE | /{id} | 删除引擎（级联删除标签、场景及关联） |
 | PUT | /{id}/toggleStatus | 切换启用/禁用 |
-| PUT | /{id}/setDefault | 设为默认引擎 |
+| PUT | /{id}/setDefault | 设为默认引擎（原子 SQL，全局唯一） |
 | PUT | /{id}/cancelDefault | 取消默认引擎 |
+| GET | /enums | 获取枚举选项列表（引擎类型、适用对象） |
+| GET | /default | 按适用对象获取默认引擎（不匹配则返回 null） |
 
 ### 6.2 标签规则管理 `/api/tag`
 
@@ -331,6 +342,27 @@ strategy_tag_field  （独立元数据表，不与其他表关联）
   }
 ]
 ```
+
+**`GET /api/engine/enums` 响应示例：**
+
+```json
+{
+  "engineTypes": [
+    { "code": "COMPREHENSIVE_REVIEW", "label": "综合复习" },
+    { "code": "SINGLE_EXAM",          "label": "单场考试" }
+  ],
+  "applicableObjects": [
+    { "code": "STUDENT", "label": "学生" },
+    { "code": "CLASS",   "label": "班级" },
+    { "code": "GRADE",   "label": "年级" },
+    { "code": "BUREAU",  "label": "教育局" }
+  ]
+}
+```
+
+**`GET /api/engine/default?applicableObject=BUREAU` 说明：**
+
+查询 `is_default=1` 且 `applicable_object` 与传入值一致的引擎。若全局默认引擎的适用对象不匹配（如默认引擎为 STUDENT 类型，调用方传 BUREAU），则 `data` 返回 `null`，HTTP 状态码仍为 200，调用方自行降级处理。
 
 ### 6.5 备用接口（当前未启用）
 

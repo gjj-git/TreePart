@@ -49,4 +49,12 @@ public interface StrategyEngineService {
      * 取消默认引擎
      */
     void cancelDefault(Long id);
+
+    /**
+     * 获取默认引擎（按适用对象过滤）
+     *
+     * @param applicableObject 适用对象类型
+     * @return 匹配的默认引擎，无匹配则返回 null
+     */
+    StrategyEngineVO getDefault(String applicableObject);
 }

@@ -151,4 +151,16 @@ public class StrategyEngineServiceImpl implements StrategyEngineService {
                 .set(StrategyEngine::getIsDefault, 0);
         strategyEngineMapper.update(null, wrapper);
     }
+
+    @Override
+    public StrategyEngineVO getDefault(String applicableObject) {
+        LambdaQueryWrapper<StrategyEngine> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(StrategyEngine::getIsDefault, 1)
+                .eq(StrategyEngine::getApplicableObject, applicableObject);
+        StrategyEngine engine = strategyEngineMapper.selectOne(wrapper);
+        if (engine == null) {
+            return null;
+        }
+        return BeanUtil.copyProperties(engine, StrategyEngineVO.class);
+    }
 }

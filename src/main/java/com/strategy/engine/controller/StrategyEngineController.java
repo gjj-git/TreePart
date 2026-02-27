@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.strategy.engine.common.Result;
 import com.strategy.engine.dto.StrategyEngineDTO;
 import com.strategy.engine.dto.StrategyEngineQueryDTO;
+import com.strategy.engine.enums.ApplicableObject;
+import com.strategy.engine.enums.EngineType;
 import com.strategy.engine.service.StrategyEngineService;
 import com.strategy.engine.vo.StrategyEngineVO;
 import io.swagger.v3.oas.annotations.Operation;
@@ -12,6 +14,12 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * 策略引擎 Controller
@@ -78,5 +86,38 @@ public class StrategyEngineController {
     public Result<Void> cancelDefault(@Parameter(description = "引擎ID") @PathVariable Long id) {
         strategyEngineService.cancelDefault(id);
         return Result.success("取消默认成功", null);
+    }
+
+    @Operation(summary = "获取枚举选项（引擎类型、适用对象）")
+    @GetMapping("/enums")
+    public Result<Map<String, List<Map<String, String>>>> getEnums() {
+        List<Map<String, String>> engineTypes = Arrays.stream(EngineType.values())
+                .map(e -> {
+                    Map<String, String> item = new LinkedHashMap<>();
+                    item.put("code", e.getCode());
+                    item.put("label", e.getDescription());
+                    return item;
+                }).collect(Collectors.toList());
+
+        List<Map<String, String>> applicableObjects = Arrays.stream(ApplicableObject.values())
+                .map(e -> {
+                    Map<String, String> item = new LinkedHashMap<>();
+                    item.put("code", e.getCode());
+                    item.put("label", e.getDescription());
+                    return item;
+                }).collect(Collectors.toList());
+
+        Map<String, List<Map<String, String>>> result = new LinkedHashMap<>();
+        result.put("engineTypes", engineTypes);
+        result.put("applicableObjects", applicableObjects);
+        return Result.success(result);
+    }
+
+    @Operation(summary = "获取默认引擎")
+    @GetMapping("/default")
+    public Result<StrategyEngineVO> getDefault(
+            @Parameter(description = "适用对象类型") @RequestParam String applicableObject) {
+        StrategyEngineVO vo = strategyEngineService.getDefault(applicableObject);
+        return Result.success(vo);
     }
 }
