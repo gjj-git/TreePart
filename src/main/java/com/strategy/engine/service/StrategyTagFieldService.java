@@ -22,6 +22,4 @@ public interface StrategyTagFieldService {
     void update(StrategyTagFieldDTO dto);
 
     void delete(Long id);
-
-    void toggleStatus(Long id);
 }

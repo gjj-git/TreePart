@@ -63,11 +63,4 @@ public class StrategyTagFieldController {
         strategyTagFieldService.delete(id);
         return Result.success("删除成功", null);
     }
-
-    @Operation(summary = "切换字段启用/禁用状态")
-    @PutMapping("/{id}/toggleStatus")
-    public Result<Void> toggleStatus(@Parameter(description = "字段ID") @PathVariable Long id) {
-        strategyTagFieldService.toggleStatus(id);
-        return Result.success("操作成功", null);
-    }
 }

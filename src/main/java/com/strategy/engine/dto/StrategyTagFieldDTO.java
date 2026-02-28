@@ -44,7 +44,4 @@ public class StrategyTagFieldDTO {
     @Schema(description = "分类内排序，默认0")
     private Integer sort;
 
-    @NotNull(message = "状态不能为空")
-    @Schema(description = "状态：0-禁用 / 1-启用", requiredMode = Schema.RequiredMode.REQUIRED)
-    private Integer status;
 }

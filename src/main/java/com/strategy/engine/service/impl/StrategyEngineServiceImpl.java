@@ -68,6 +68,9 @@ public class StrategyEngineServiceImpl implements StrategyEngineService {
         engine.setTagCount(0);
         engine.setSceneCount(0);
         engine.setIsDefault(0);
+        if (engine.getStatus() == null) {
+            engine.setStatus(1);
+        }
         strategyEngineMapper.insert(engine);
         return engine.getId();
     }

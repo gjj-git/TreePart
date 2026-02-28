@@ -30,7 +30,6 @@ public class StrategyTagRuleDTO {
     @Schema(description = "规则配置（条件树JSON字符串）")
     private String ruleConfig;
 
-    @NotNull(message = "状态不能为空")
-    @Schema(description = "状态：0-禁用, 1-启用", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(description = "状态：0-禁用, 1-启用")
     private Integer status;
 }

@@ -12,7 +12,7 @@ import java.util.List;
  */
 public interface StrategyTagRuleService {
 
-    Page<StrategyTagRuleVO> pageByEngineId(Long engineId, Integer pageNum, Integer pageSize);
+    Page<StrategyTagRuleVO> pageByEngineId(Long engineId, Integer pageNum, Integer pageSize, String name, Integer status);
 
     StrategyTagRuleVO getById(Long id);
 

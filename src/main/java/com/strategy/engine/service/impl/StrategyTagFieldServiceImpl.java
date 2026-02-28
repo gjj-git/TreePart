@@ -2,7 +2,6 @@ package com.strategy.engine.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.strategy.engine.dto.StrategyTagFieldDTO;
 import com.strategy.engine.entity.StrategyEngine;
 import com.strategy.engine.entity.StrategyTagField;
@@ -132,17 +131,5 @@ public class StrategyTagFieldServiceImpl implements StrategyTagFieldService {
             throw new BusinessException("字段不存在");
         }
         strategyTagFieldMapper.deleteById(id);
-    }
-
-    @Override
-    public void toggleStatus(Long id) {
-        StrategyTagField field = strategyTagFieldMapper.selectById(id);
-        if (field == null) {
-            throw new BusinessException("字段不存在");
-        }
-        LambdaUpdateWrapper<StrategyTagField> wrapper = new LambdaUpdateWrapper<>();
-        wrapper.eq(StrategyTagField::getId, id)
-                .set(StrategyTagField::getStatus, field.getStatus() == 1 ? 0 : 1);
-        strategyTagFieldMapper.update(null, wrapper);
     }
 }

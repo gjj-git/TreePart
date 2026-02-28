@@ -4,7 +4,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
 
 /**
  * 策略引擎创建/更新 DTO
@@ -31,7 +30,6 @@ public class StrategyEngineDTO {
     @Schema(description = "引擎描述")
     private String description;
 
-    @NotNull(message = "状态不能为空")
-    @Schema(description = "状态：0-禁用, 1-启用", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(description = "状态：0-禁用, 1-启用（创建时不传默认启用）")
     private Integer status;
 }

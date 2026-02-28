@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.strategy.engine.mapper.StrategyTagFieldMapper">
+
+    <resultMap id="StrategyTagFieldRM" type="com.strategy.engine.entity.StrategyTagField">
+        <id     column="id"                  property="id" />
+        <result column="field_key"           property="fieldKey" />
+        <result column="field_name"          property="fieldName" />
+        <result column="category"            property="category" />
+        <result column="data_type"           property="dataType" />
+        <result column="operators"           property="operators"
+                typeHandler="com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler" />
+        <result column="applicable_objects"  property="applicableObjects"
+                typeHandler="com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler" />
+        <result column="sort"                property="sort" />
+    </resultMap>
+
+    <select id="listByApplicableObject" resultMap="StrategyTagFieldRM">
+        SELECT *
+        FROM strategy_tag_field
+        WHERE (JSON_CONTAINS(applicable_objects, '"ALL"')
+           OR  JSON_CONTAINS(applicable_objects, CONCAT('"', #{applicableObject}, '"')))
+        ORDER BY category, sort
+    </select>
+
+</mapper>

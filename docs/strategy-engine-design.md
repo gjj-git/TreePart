@@ -6,6 +6,7 @@
 | v1.1 | 郭俊杰 | 2026-02-25 | 修正引擎应用流程；删除场景匹配接口；补充标签条件与存储设计 |
 | v1.2 | 郭俊杰 | 2026-02-26 | 新增条件字段元数据（StrategyTagField）模块；表名统一使用 strategy_ 前缀；移除 strategy_scene.status 和 strategy_scene_tag.enabled；Java 类名全部加 Strategy 前缀 |
 | v1.3 | 郭俊杰 | 2026-02-27 | 新增枚举选项查询接口；新增按适用对象获取默认引擎接口；默认引擎设置改为原子 SQL |
+| v1.4 | 郭俊杰 | 2026-02-28 | strategy_tag_rule 新增 rule_sql 列；新增 RuleToSqlTranslator，保存标签时自动将 rule_config JSON 转换为 SQL WHERE 片段双写；新增场景可添加标签分页查询接口；RuleToSqlTranslator 补充输入合法性校验 |
 
 ---
 
@@ -119,6 +120,27 @@
 
 > `RuleMatchEngine` 递归求值：Group 节点按 AND/OR 聚合子结果，Condition 节点从 dataMap 取值后按运算符比较，数值比较使用 BigDecimal。
 
+**rule_sql 自动生成：**
+
+标签规则保存（创建/更新）时，后端调用 `RuleToSqlTranslator.translate(ruleConfig)` 将条件树 JSON 自动转换为 SQL WHERE 片段，存入 `strategy_tag_rule.rule_sql` 列。`RuleMatchEngine` 继续使用 `rule_config` 做 Java 内存求值，`rule_sql` 供 DuckDB / Superset 等外部系统直接使用，两条路径互不影响。
+
+示例转换结果：
+
+```
+rule_config: {"type":"group","operator":"AND","children":[
+  {"type":"condition","field":"exam_mastery","operator":">","value":"60"},
+  {"type":"condition","field":"difficulty_level","operator":"IN","value":"HIGH,VERY_HIGH"}
+]}
+
+rule_sql: exam_mastery > 60 AND difficulty_level IN ('HIGH', 'VERY_HIGH')
+```
+
+`RuleToSqlTranslator` 内置以下输入校验，非法输入均抛 `IllegalArgumentException`：
+- 节点 `type` 为 null 或非 `group`/`condition`
+- group 的 `operator` 为空或非 `AND`/`OR`
+- 数值运算符（`>`/`>=`/`<`/`<=`）的 `value` 不是合法数字
+- `CONTAINS`/`NOT_CONTAINS` 的 `value` 为 null
+
 ### 4.3 条件字段元数据（StrategyTagField）
 
 前端规则编辑器左侧字段库所需的字段列表由 `strategy_tag_field` 表统一维护，支持按引擎适用对象过滤。
@@ -215,6 +237,7 @@ strategy_tag_field  （独立元数据表，不与其他表关联）
 | name | varchar(100) | 标签名称 |
 | description | varchar(500) | 标签说明 |
 | rule_config | json | 条件树 JSON，详见 4.2 节 |
+| rule_sql | text | SQL WHERE 片段，由 rule_config 在保存时自动转换，供 DuckDB/Superset 直接使用 |
 | status | tinyint(1) | 0-禁用 1-启用 |
 | created_time / updated_time / deleted | - | 同上 |
 
@@ -310,6 +333,7 @@ strategy_tag_field  （独立元数据表，不与其他表关联）
 | PUT | / | 更新场景（tags=null 不动关联；tags=[] 清空；tags=[...] 全量替换） |
 | DELETE | /{id} | 删除场景（级联删除标签关联） |
 | POST | /{sceneId}/tags | 单独配置场景标签关联（全量替换） |
+| GET | /{sceneId}/available-tags | 分页查询场景可添加的标签（未关联），支持 name 模糊搜索 |
 
 ### 6.4 条件字段管理 `/api/field`
 
@@ -392,7 +416,7 @@ src/main/java/com/strategy/engine/
 ├── mapper/          StrategyEngineMapper        StrategyTagRuleMapper
 │                    StrategySceneMapper         StrategySceneTagMapper
 │                    StrategyTagFieldMapper
-├── rule/            RuleMatchEngine（条件树求值，供调用方集成）  RuleNode
+├── rule/            RuleMatchEngine（条件树求值，供调用方集成）  RuleNode  RuleToSqlTranslator（条件树→SQL WHERE 片段）
 ├── service/         StrategyEngineService       StrategyTagRuleService
 │                    StrategySceneService        StrategyTagFieldService
 │                    EngineFullConfigService（备用）

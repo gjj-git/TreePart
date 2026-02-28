@@ -6,6 +6,7 @@ import com.strategy.engine.dto.StrategySceneDTO;
 import com.strategy.engine.dto.StrategySceneTagItemDTO;
 import com.strategy.engine.service.StrategySceneService;
 import com.strategy.engine.vo.StrategySceneVO;
+import com.strategy.engine.vo.StrategyTagRuleVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -30,9 +31,10 @@ public class StrategySceneController {
     @GetMapping("/page/{engineId}")
     public Result<Page<StrategySceneVO>> pageByEngineId(
             @Parameter(description = "引擎ID") @PathVariable Long engineId,
+            @Parameter(description = "场景名称（模糊）") @RequestParam(required = false) String name,
             @Parameter(description = "页码") @RequestParam(defaultValue = "1") Integer pageNum,
             @Parameter(description = "每页大小") @RequestParam(defaultValue = "10") Integer pageSize) {
-        return Result.success(strategySceneService.pageByEngineId(engineId, pageNum, pageSize));
+        return Result.success(strategySceneService.pageByEngineId(engineId, pageNum, pageSize, name));
     }
 
     @Operation(summary = "根据引擎ID获取所有场景（不分页）", description = "供调用方获取场景权重配置")
@@ -65,6 +67,16 @@ public class StrategySceneController {
     public Result<Void> delete(@Parameter(description = "场景ID") @PathVariable Long id) {
         strategySceneService.delete(id);
         return Result.success("删除成功", null);
+    }
+
+    @Operation(summary = "分页查询场景可添加的标签（未关联）")
+    @GetMapping("/{sceneId}/available-tags")
+    public Result<Page<StrategyTagRuleVO>> pageAvailableTags(
+            @Parameter(description = "场景ID") @PathVariable Long sceneId,
+            @Parameter(description = "标签名称（模糊）") @RequestParam(required = false) String name,
+            @Parameter(description = "页码") @RequestParam(defaultValue = "1") Integer pageNum,
+            @Parameter(description = "每页大小") @RequestParam(defaultValue = "10") Integer pageSize) {
+        return Result.success(strategySceneService.pageAvailableTags(sceneId, pageNum, pageSize, name));
     }
 
     @Operation(summary = "配置场景标签关联（全量替换）")

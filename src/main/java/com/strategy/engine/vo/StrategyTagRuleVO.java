@@ -27,6 +27,9 @@ public class StrategyTagRuleVO {
     @Schema(description = "规则配置（条件树JSON字符串）")
     private String ruleConfig;
 
+    @Schema(description = "规则SQL（由条件树自动转换，供数据库/BI直接使用）")
+    private String ruleSql;
+
     @Schema(description = "状态")
     private Integer status;
 

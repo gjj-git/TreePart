@@ -12,6 +12,7 @@ import com.strategy.engine.exception.BusinessException;
 import com.strategy.engine.mapper.StrategyEngineMapper;
 import com.strategy.engine.mapper.StrategySceneTagMapper;
 import com.strategy.engine.mapper.StrategyTagRuleMapper;
+import com.strategy.engine.rule.RuleToSqlTranslator;
 import com.strategy.engine.service.StrategyTagRuleService;
 import com.strategy.engine.vo.StrategyTagRuleVO;
 import com.strategy.engine.vo.TagUsageVO;
@@ -37,12 +38,18 @@ public class StrategyTagRuleServiceImpl implements StrategyTagRuleService {
     private final StrategySceneMapper strategySceneMapper;
 
     @Override
-    public Page<StrategyTagRuleVO> pageByEngineId(Long engineId, Integer pageNum, Integer pageSize) {
+    public Page<StrategyTagRuleVO> pageByEngineId(Long engineId, Integer pageNum, Integer pageSize, String name, Integer status) {
         Page<StrategyTagRule> page = new Page<>(pageNum, pageSize);
 
         LambdaQueryWrapper<StrategyTagRule> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(StrategyTagRule::getEngineId, engineId)
-                .orderByDesc(StrategyTagRule::getCreatedTime);
+        wrapper.eq(StrategyTagRule::getEngineId, engineId);
+        if (name != null && !name.isBlank()) {
+            wrapper.like(StrategyTagRule::getName, name);
+        }
+        if (status != null) {
+            wrapper.eq(StrategyTagRule::getStatus, status);
+        }
+        wrapper.orderByDesc(StrategyTagRule::getCreatedTime);
 
         Page<StrategyTagRule> resultPage = strategyTagRuleMapper.selectPage(page, wrapper);
         return (Page<StrategyTagRuleVO>) resultPage.convert(tag -> BeanUtil.copyProperties(tag, StrategyTagRuleVO.class));
@@ -61,6 +68,10 @@ public class StrategyTagRuleServiceImpl implements StrategyTagRuleService {
     @Transactional(rollbackFor = Exception.class)
     public Long create(StrategyTagRuleDTO dto) {
         StrategyTagRule tag = BeanUtil.copyProperties(dto, StrategyTagRule.class);
+        if (tag.getStatus() == null) {
+            tag.setStatus(1);
+        }
+        tag.setRuleSql(RuleToSqlTranslator.translate(dto.getRuleConfig()));
         strategyTagRuleMapper.insert(tag);
         updateEngineTagCount(dto.getEngineId());
         return tag.getId();
@@ -77,6 +88,7 @@ public class StrategyTagRuleServiceImpl implements StrategyTagRuleService {
             throw new BusinessException("标签不存在");
         }
         BeanUtil.copyProperties(dto, tag, "id", "createdTime", "updatedTime", "deleted");
+        tag.setRuleSql(RuleToSqlTranslator.translate(dto.getRuleConfig()));
         strategyTagRuleMapper.updateById(tag);
     }
 

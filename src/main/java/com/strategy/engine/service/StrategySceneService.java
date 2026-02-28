@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.strategy.engine.dto.StrategySceneDTO;
 import com.strategy.engine.dto.StrategySceneTagItemDTO;
 import com.strategy.engine.vo.StrategySceneVO;
+import com.strategy.engine.vo.StrategyTagRuleVO;
 
 import java.util.List;
 
@@ -12,7 +13,9 @@ import java.util.List;
  */
 public interface StrategySceneService {
 
-    Page<StrategySceneVO> pageByEngineId(Long engineId, Integer pageNum, Integer pageSize);
+    Page<StrategySceneVO> pageByEngineId(Long engineId, Integer pageNum, Integer pageSize, String name);
+
+    Page<StrategyTagRuleVO> pageAvailableTags(Long sceneId, Integer pageNum, Integer pageSize, String name);
 
     List<StrategySceneVO> listByEngineId(Long engineId);
 

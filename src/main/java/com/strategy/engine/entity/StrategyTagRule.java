@@ -35,6 +35,11 @@ public class StrategyTagRule {
     private String ruleConfig;
 
     /**
+     * 规则SQL（由 ruleConfig 在保存时自动转换，供数据库/BI直接使用）
+     */
+    private String ruleSql;
+
+    /**
      * 状态：0-禁用, 1-启用
      */
     private Integer status;

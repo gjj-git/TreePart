@@ -32,6 +32,7 @@ CREATE TABLE `strategy_tag_rule` (
   `name` varchar(100) NOT NULL COMMENT '标签名称',
   `description` varchar(500) COMMENT '标签说明',
   `rule_config` json COMMENT '规则配置（条件树JSON）',
+  `rule_sql` text COMMENT '规则SQL（由 rule_config 在保存时自动转换，供数据库/BI直接使用）',
   `status` tinyint(1) NOT NULL DEFAULT '1' COMMENT '状态：0-禁用, 1-启用',
   `created_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `updated_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
@@ -76,11 +77,9 @@ CREATE TABLE `strategy_tag_field` (
   `operators`           json         NOT NULL COMMENT '允许的运算符列表，如 [">",">=","<","<=","="]',
   `applicable_objects`  json         NOT NULL COMMENT '适用对象列表，["ALL"] 表示所有引擎通用',
   `sort`                int(11)      NOT NULL DEFAULT '0' COMMENT '分类内排序',
-  `status`              tinyint(1)   NOT NULL DEFAULT '1' COMMENT '状态：0-禁用, 1-启用',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_field_key` (`field_key`),
-  KEY `idx_category` (`category`),
-  KEY `idx_status` (`status`)
+  KEY `idx_category` (`category`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='条件字段元数据配置表';
 
 -- 初始字段数据
@@ -100,20 +99,20 @@ INSERT INTO `strategy_tag_field` (`field_key`, `field_name`, `category`, `data_t
 ('exam_score_area',   '知识点考核分数(区域)', 'INHERENT', 'NUMBER', '[">",">=","<","<=","=","!="]',       '["ALL"]', 12),
 ('importance',        '重要度',            'INHERENT', 'NUMBER', '[">",">=","<","<=","=","!="]',          '["ALL"]', 13),
 ('importance_area',   '重要度(区域)',       'INHERENT', 'NUMBER', '[">",">=","<","<=","=","!="]',          '["ALL"]', 14),
--- 考试属性（学校/班级/学生）
-('exam_mastery',      '考试掌握度',        'EXAM', 'NUMBER', '[">",">=","<","<=","=","!="]', '["SCHOOL","CLASS","STUDENT"]', 1),
-('exam_target',       '目标值(考试)',       'EXAM', 'NUMBER', '[">",">=","<","<=","=","!="]', '["SCHOOL","CLASS","STUDENT"]', 2),
-('exam_reliability',  '可信度(考试)',       'EXAM', 'NUMBER', '[">",">=","<","<=","=","!="]', '["SCHOOL","CLASS","STUDENT"]', 3),
-('exam_item_count',   '涉及试题数',        'EXAM', 'NUMBER', '[">",">=","<","<=","=","!="]', '["SCHOOL","CLASS","STUDENT"]', 4),
-('exam_score',        '涉及分数(考试)',     'EXAM', 'NUMBER', '[">",">=","<","<=","=","!="]', '["SCHOOL","CLASS","STUDENT"]', 5),
-('exam_pass_status',  '达标状态(考试)',     'EXAM', 'ENUM',   '["=","!=","IN","NOT_IN"]',    '["SCHOOL","CLASS","STUDENT"]', 6),
-('exam_pass_rate',    '达标占比(考试)',     'EXAM', 'NUMBER', '[">",">=","<","<=","=","!="]', '["SCHOOL","CLASS"]',           7),
--- 综合属性（学校/班级/学生，达标占比仅学校/班级）
-('overall_mastery',   '综合掌握度',        'COMPREHENSIVE', 'NUMBER', '[">",">=","<","<=","=","!="]', '["SCHOOL","CLASS","STUDENT"]', 1),
-('overall_target',    '目标值(综合)',       'COMPREHENSIVE', 'NUMBER', '[">",">=","<","<=","=","!="]', '["SCHOOL","CLASS","STUDENT"]', 2),
-('overall_reliability','可信度(综合)',      'COMPREHENSIVE', 'NUMBER', '[">",">=","<","<=","=","!="]', '["SCHOOL","CLASS","STUDENT"]', 3),
-('total_item_count',  '累计考核试题数',     'COMPREHENSIVE', 'NUMBER', '[">",">=","<","<=","=","!="]', '["SCHOOL","CLASS","STUDENT"]', 4),
-('total_score',       '累计考核分数',       'COMPREHENSIVE', 'NUMBER', '[">",">=","<","<=","=","!="]', '["SCHOOL","CLASS","STUDENT"]', 5),
-('mastery_trend',     '掌握趋势',           'COMPREHENSIVE', 'ENUM',   '["=","!=","IN","NOT_IN"]',    '["SCHOOL","CLASS","STUDENT"]', 6),
-('overall_pass_status','达标状态(综合)',    'COMPREHENSIVE', 'ENUM',   '["=","!=","IN","NOT_IN"]',    '["SCHOOL","CLASS","STUDENT"]', 7),
-('overall_pass_rate', '达标占比(综合)',     'COMPREHENSIVE', 'NUMBER', '[">",">=","<","<=","=","!="]', '["SCHOOL","CLASS"]',           8);
+-- 考试属性（班级/学生/年级/教育局）
+('exam_mastery',      '考试掌握度',        'EXAM', 'NUMBER', '[">",">=","<","<=","=","!="]', '["CLASS","STUDENT","GRADE","BUREAU"]', 1),
+('exam_target',       '目标值(考试)',       'EXAM', 'NUMBER', '[">",">=","<","<=","=","!="]', '["CLASS","STUDENT","GRADE","BUREAU"]', 2),
+('exam_reliability',  '可信度(考试)',       'EXAM', 'NUMBER', '[">",">=","<","<=","=","!="]', '["CLASS","STUDENT","GRADE","BUREAU"]', 3),
+('exam_item_count',   '涉及试题数',        'EXAM', 'NUMBER', '[">",">=","<","<=","=","!="]', '["CLASS","STUDENT","GRADE","BUREAU"]', 4),
+('exam_score',        '涉及分数(考试)',     'EXAM', 'NUMBER', '[">",">=","<","<=","=","!="]', '["CLASS","STUDENT","GRADE","BUREAU"]', 5),
+('exam_pass_status',  '达标状态(考试)',     'EXAM', 'ENUM',   '["=","!=","IN","NOT_IN"]',    '["CLASS","STUDENT","GRADE","BUREAU"]', 6),
+('exam_pass_rate',    '达标占比(考试)',     'EXAM', 'NUMBER', '[">",">=","<","<=","=","!="]', '["CLASS","GRADE","BUREAU"]',           7),
+-- 综合属性（班级/学生/年级/教育局，达标占比不含学生）
+('overall_mastery',   '综合掌握度',        'COMPREHENSIVE', 'NUMBER', '[">",">=","<","<=","=","!="]', '["CLASS","STUDENT","GRADE","BUREAU"]', 1),
+('overall_target',    '目标值(综合)',       'COMPREHENSIVE', 'NUMBER', '[">",">=","<","<=","=","!="]', '["CLASS","STUDENT","GRADE","BUREAU"]', 2),
+('overall_reliability','可信度(综合)',      'COMPREHENSIVE', 'NUMBER', '[">",">=","<","<=","=","!="]', '["CLASS","STUDENT","GRADE","BUREAU"]', 3),
+('total_item_count',  '累计考核试题数',     'COMPREHENSIVE', 'NUMBER', '[">",">=","<","<=","=","!="]', '["CLASS","STUDENT","GRADE","BUREAU"]', 4),
+('total_score',       '累计考核分数',       'COMPREHENSIVE', 'NUMBER', '[">",">=","<","<=","=","!="]', '["CLASS","STUDENT","GRADE","BUREAU"]', 5),
+('mastery_trend',     '掌握趋势',           'COMPREHENSIVE', 'ENUM',   '["=","!=","IN","NOT_IN"]',    '["CLASS","STUDENT","GRADE","BUREAU"]', 6),
+('overall_pass_status','达标状态(综合)',    'COMPREHENSIVE', 'ENUM',   '["=","!=","IN","NOT_IN"]',    '["CLASS","STUDENT","GRADE","BUREAU"]', 7),
+('overall_pass_rate', '达标占比(综合)',     'COMPREHENSIVE', 'NUMBER', '[">",">=","<","<=","=","!="]', '["CLASS","GRADE","BUREAU"]',           8);

@@ -17,6 +17,13 @@
 
 ---
 
+## 项目目录
+
+- **后端项目**：`F:\ThreePart`（当前目录，Spring Boot）
+- **前端项目**：`F:\ThreePart-Web`（Vue 3 + TypeScript）
+
+---
+
 ## 构建与运行命令
 
 ```bash
@@ -74,7 +81,7 @@ com.strategy.engine
 ├── entity/        5个实体类，对应数据库表
 ├── dto/           请求对象（含校验注解）
 ├── vo/            响应对象
-├── rule/          RuleMatchEngine + RuleNode — 条件树求值器（独立模块，无 Spring 依赖）
+├── rule/          RuleMatchEngine + RuleNode + RuleToSqlTranslator — 条件树求值器与 SQL 转换器（独立模块，无 Spring 依赖）
 ├── enums/         EngineType、ApplicableObject、StatusEnum
 └── exception/     BusinessException + GlobalExceptionHandler
 ```
@@ -88,6 +95,9 @@ com.strategy.engine
 - **`tag_count` / `scene_count`** 是 `StrategyEngine` 上的冗余统计字段，每次标签/场景增删时重新 COUNT 写回
 - **`StrategySceneTagMapper.insertBatch`** 是自定义 `@Insert` + `<foreach>`，非 MyBatis-Plus 内置
 - **`EngineFullConfigController`**（`/api/engine-config`）已实现但非主流程，作为批量保存引擎完整配置的备用方案
+- **`GET /api/scene/{sceneId}/available-tags`** 分页查询场景未关联的标签，支持标签名称模糊搜索，参数：`name`、`pageNum`、`pageSize`
+- **`rule_sql` 自动生成**：`strategy_tag_rule` 表新增 `rule_sql`（TEXT）列，保存标签规则时后端调用 `RuleToSqlTranslator.translate(ruleConfig)` 自动将 JSON 条件树转为 SQL WHERE 片段并双写，供 Superset/BI 直接使用。`RuleMatchEngine` 继续使用 `rule_config` JSON 进行 Java 内存求值，两条路径互不影响。
+- **`RuleToSqlTranslator` 输入校验**：`nodeToSql` 校验 `type` 非空且只允许 `group`/`condition`；`groupToSql` 校验 `operator` 非空且只允许 `AND`/`OR`；`conditionToSql` 对数值运算符（`>`/`>=`/`<`/`<=`）校验 value 必须为合法数字；`CONTAINS`/`NOT_CONTAINS` 校验 value 不为 null，非法输入均抛 `IllegalArgumentException`。
 
 ### RuleMatchEngine 条件树格式
 

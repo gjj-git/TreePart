@@ -18,6 +18,7 @@ import com.strategy.engine.mapper.StrategyTagRuleMapper;
 import com.strategy.engine.service.StrategySceneService;
 import com.strategy.engine.vo.StrategySceneTagVO;
 import com.strategy.engine.vo.StrategySceneVO;
+import com.strategy.engine.vo.StrategyTagRuleVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,11 +42,44 @@ public class StrategySceneServiceImpl implements StrategySceneService {
     private final StrategyEngineMapper strategyEngineMapper;
 
     @Override
-    public Page<StrategySceneVO> pageByEngineId(Long engineId, Integer pageNum, Integer pageSize) {
+    public Page<StrategyTagRuleVO> pageAvailableTags(Long sceneId, Integer pageNum, Integer pageSize, String name) {
+        StrategyScene scene = strategySceneMapper.selectById(sceneId);
+        if (scene == null) {
+            throw new BusinessException("场景不存在");
+        }
+
+        // 查出该场景已关联的标签ID集合
+        LambdaQueryWrapper<StrategySceneTag> relWrapper = new LambdaQueryWrapper<>();
+        relWrapper.eq(StrategySceneTag::getSceneId, sceneId)
+                .select(StrategySceneTag::getTagId);
+        List<Long> linkedTagIds = strategySceneTagMapper.selectList(relWrapper)
+                .stream().map(StrategySceneTag::getTagId).collect(Collectors.toList());
+
+        // 查询该引擎下排除已关联标签后的标签列表
+        Page<StrategyTagRule> page = new Page<>(pageNum, pageSize);
+        LambdaQueryWrapper<StrategyTagRule> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(StrategyTagRule::getEngineId, scene.getEngineId());
+        if (!linkedTagIds.isEmpty()) {
+            wrapper.notIn(StrategyTagRule::getId, linkedTagIds);
+        }
+        if (name != null && !name.isBlank()) {
+            wrapper.like(StrategyTagRule::getName, name);
+        }
+        wrapper.orderByDesc(StrategyTagRule::getCreatedTime);
+
+        Page<StrategyTagRule> resultPage = strategyTagRuleMapper.selectPage(page, wrapper);
+        return (Page<StrategyTagRuleVO>) resultPage.convert(tag -> BeanUtil.copyProperties(tag, StrategyTagRuleVO.class));
+    }
+
+    @Override
+    public Page<StrategySceneVO> pageByEngineId(Long engineId, Integer pageNum, Integer pageSize, String name) {
         Page<StrategyScene> page = new Page<>(pageNum, pageSize);
         LambdaQueryWrapper<StrategyScene> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(StrategyScene::getEngineId, engineId)
-                .orderByDesc(StrategyScene::getCreatedTime);
+        wrapper.eq(StrategyScene::getEngineId, engineId);
+        if (name != null && !name.isBlank()) {
+            wrapper.like(StrategyScene::getName, name);
+        }
+        wrapper.orderByDesc(StrategyScene::getCreatedTime);
         Page<StrategyScene> resultPage = strategySceneMapper.selectPage(page, wrapper);
         return (Page<StrategySceneVO>) resultPage.convert(scene -> {
             StrategySceneVO vo = BeanUtil.copyProperties(scene, StrategySceneVO.class);

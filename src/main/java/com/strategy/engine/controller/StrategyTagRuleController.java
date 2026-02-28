@@ -30,9 +30,11 @@ public class StrategyTagRuleController {
     @GetMapping("/page/{engineId}")
     public Result<Page<StrategyTagRuleVO>> pageByEngineId(
             @Parameter(description = "引擎ID") @PathVariable Long engineId,
+            @Parameter(description = "标签名称（模糊）") @RequestParam(required = false) String name,
+            @Parameter(description = "状态：0-禁用, 1-启用") @RequestParam(required = false) Integer status,
             @Parameter(description = "页码") @RequestParam(defaultValue = "1") Integer pageNum,
             @Parameter(description = "每页大小") @RequestParam(defaultValue = "10") Integer pageSize) {
-        return Result.success(strategyTagRuleService.pageByEngineId(engineId, pageNum, pageSize));
+        return Result.success(strategyTagRuleService.pageByEngineId(engineId, pageNum, pageSize, name, status));
     }
 
     @Operation(summary = "查询标签详情")

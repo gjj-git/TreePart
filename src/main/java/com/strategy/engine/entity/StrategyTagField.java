@@ -54,9 +54,4 @@ public class StrategyTagField {
      * 分类内排序
      */
     private Integer sort;
-
-    /**
-     * 状态：0-禁用 / 1-启用
-     */
-    private Integer status;
 }

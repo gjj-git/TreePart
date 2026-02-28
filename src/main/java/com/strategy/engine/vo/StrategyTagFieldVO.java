@@ -35,7 +35,4 @@ public class StrategyTagFieldVO {
 
     @Schema(description = "分类内排序")
     private Integer sort;
-
-    @Schema(description = "状态：0-禁用 / 1-启用")
-    private Integer status;
 }
