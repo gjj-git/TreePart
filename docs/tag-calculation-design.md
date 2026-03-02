@@ -112,14 +112,15 @@ CREATE TABLE student_knowledge_fact (
 - 不做历史存储
 - 计算完成后可清空
 
-### 4.3 标签表（Mongo）
+### 4.3 标签规则表（MySQL - strategy_tag_rule）
+
+标签规则由策略引擎管理后端维护，存储在 MySQL 中，计算服务通过接口读取。
 
 ```json
 {
-  "tag_id": 1,
+  "id": 1,
   "engine_id": 10,
   "name": "高掌握度",
-  "score_weight": 10,
   "rule_config": {
     "type": "group",
     "operator": "AND",
@@ -128,13 +129,26 @@ CREATE TABLE student_knowledge_fact (
       { "type": "condition", "field": "level", "operator": "=", "value": "2" }
     ]
   },
-  "rule_sql": "mastery > 0.8 AND level = 2"
+  "rule_sql": "mastery > 0.8 AND level = 2",
+  "status": 1
 }
 ```
 
-> `rule_config` 为条件树 DSL JSON，供前端规则编辑器回显使用；`rule_sql` 为后端在保存时自动转换的 SQL WHERE 片段，供 DuckDB 计算服务直接使用。
+> `rule_config` 为条件树 DSL JSON，供前端规则编辑器回显使用；`rule_sql` 为后端在保存时自动转换的 SQL WHERE 片段，供 DuckDB 计算服务直接拼入 CASE WHEN 语句。
 
-### 4.4 标签结果表（Mongo）
+### 4.4 场景权重表（MySQL - strategy_scene_tag）
+
+标签的权重系数不存在标签表上，而是存在场景与标签的关联表中，同一标签在不同场景下可配置不同权重。
+
+```json
+{
+  "scene_id": 5,
+  "tag_id": 1,
+  "weight_coefficient": 10
+}
+```
+
+### 4.6 标签结果表（Mongo）
 
 ```json
 {

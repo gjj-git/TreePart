@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 @TableName("strategy_tag_rule")
 public class StrategyTagRule {
 
-    @TableId(type = IdType.AUTO)
+    @TableId(type = IdType.ASSIGN_ID)
     private Long id;
 
     /**

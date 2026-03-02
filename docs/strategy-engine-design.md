@@ -238,8 +238,9 @@ strategy_tag_field  （独立元数据表，不与其他表关联）
 | description | varchar(500) | 标签说明 |
 | rule_config | json | 条件树 JSON，详见 4.2 节 |
 | rule_sql | text | SQL WHERE 片段，由 rule_config 在保存时自动转换，供 DuckDB/Superset 直接使用 |
-| status | tinyint(1) | 0-禁用 1-启用 |
-| created_time / updated_time / deleted | - | 同上 |
+| status | tinyint(1) | 0-禁用 1-启用，默认 1 |
+| created_time / updated_time | datetime | 自动维护 |
+| deleted | tinyint(1) | 逻辑删除，默认 0 |
 
 #### strategy_scene
 
@@ -249,7 +250,8 @@ strategy_tag_field  （独立元数据表，不与其他表关联）
 | engine_id | bigint | 所属引擎 |
 | name | varchar(100) | 场景名称 |
 | description | varchar(500) | 场景说明 |
-| created_time / updated_time / deleted | - | 同上 |
+| created_time / updated_time | datetime | 自动维护 |
+| deleted | tinyint(1) | 逻辑删除，默认 0 |
 
 #### strategy_scene_tag
 

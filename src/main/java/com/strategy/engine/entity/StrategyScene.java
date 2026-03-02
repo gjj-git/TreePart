@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 @TableName("strategy_scene")
 public class StrategyScene {
 
-    @TableId(type = IdType.AUTO)
+    @TableId(type = IdType.ASSIGN_ID)
     private Long id;
 
     /**

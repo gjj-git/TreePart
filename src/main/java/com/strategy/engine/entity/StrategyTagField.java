@@ -14,7 +14,7 @@ import java.util.List;
 @TableName(value = "strategy_tag_field", autoResultMap = true)
 public class StrategyTagField {
 
-    @TableId(type = IdType.AUTO)
+    @TableId(type = IdType.ASSIGN_ID)
     private Long id;
 
     /**

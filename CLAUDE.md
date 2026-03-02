@@ -97,7 +97,8 @@ com.strategy.engine
 - **`EngineFullConfigController`**（`/api/engine-config`）已实现但非主流程，作为批量保存引擎完整配置的备用方案
 - **`GET /api/scene/{sceneId}/available-tags`** 分页查询场景未关联的标签，支持标签名称模糊搜索，参数：`name`、`pageNum`、`pageSize`
 - **`rule_sql` 自动生成**：`strategy_tag_rule` 表新增 `rule_sql`（TEXT）列，保存标签规则时后端调用 `RuleToSqlTranslator.translate(ruleConfig)` 自动将 JSON 条件树转为 SQL WHERE 片段并双写，供 Superset/BI 直接使用。`RuleMatchEngine` 继续使用 `rule_config` JSON 进行 Java 内存求值，两条路径互不影响。
-- **`RuleToSqlTranslator` 输入校验**：`nodeToSql` 校验 `type` 非空且只允许 `group`/`condition`；`groupToSql` 校验 `operator` 非空且只允许 `AND`/`OR`；`conditionToSql` 对数值运算符（`>`/`>=`/`<`/`<=`）校验 value 必须为合法数字；`CONTAINS`/`NOT_CONTAINS` 校验 value 不为 null，非法输入均抛 `IllegalArgumentException`。
+- **主键生成策略**：所有实体类主键使用 `@TableId(type = IdType.ASSIGN_ID)`，采用 MyBatis-Plus 内置雪花算法生成 19 位数字 ID，INSERT 前由应用层生成，数据库 `AUTO_INCREMENT` 保留但不触发。
+- **分页插件**：`MybatisPlusConfig` 注册 `PaginationInnerInterceptor(DbType.MYSQL)`，所有 `selectPage` 调用均会执行 count 查询，`total`/`pages` 正确返回。
 
 ### RuleMatchEngine 条件树格式
 
