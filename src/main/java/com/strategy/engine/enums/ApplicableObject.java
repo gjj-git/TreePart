@@ -14,7 +14,7 @@ public enum ApplicableObject {
 
     STUDENT("STUDENT", "学生"),
     CLASS("CLASS", "班级"),
-    GRADE("GRADE", "年级"),
+    SCHOOL("SCHOOL", "学校"),
     BUREAU("BUREAU", "教育局");
 
     @EnumValue

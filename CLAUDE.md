@@ -19,8 +19,8 @@
 
 ## 项目目录
 
-- **后端项目**：`F:\ThreePart`（当前目录，Spring Boot）
-- **前端项目**：`F:\ThreePart-Web`（Vue 3 + TypeScript）
+- **后端项目**：`E:\claudeProjects\ThreePart`（当前目录，Spring Boot）
+- **前端项目**：`E:\claudeProjects\ThreePart-Web`（Vue 3 + TypeScript）
 
 ---
 
@@ -168,3 +168,46 @@ UPDATE strategy_engine SET is_default = CASE WHEN id = #{id} THEN 1 ELSE 0 END W
 ### 已讨论并确认的设计决策（不再重复讨论）
 
 - **默认引擎是否按适用对象独立** → 项目经理决定：全局唯一默认，不做 per-applicableObject 独立默认，获取不到就返回 null，调用方自行降级。
+
+---
+
+## 迁移至 qbank 项目
+
+本项目的策略引擎模块已迁移到 qbank 项目中，当前前端项目（`E:\claudeProjects\ThreePart-Web`）已配置为指向 qbank 服务进行联调测试。
+
+### qbank 项目位置
+
+- **项目路径**：`C:\Users\Administrator\.ssh\Qbank\qbank-app`
+- **本地服务端口**：`8291`
+
+### qbank 中策略引擎相关文件
+
+- **迁移 SQL**：`src/main/resources/db/migration/V20260303.001.0001__create_strategy_engine_tables.sql`
+- **实体类**：`src/main/java/com/mirayai/qbank/dao/entity/Strategy*.java`
+- **工具类**：`src/main/java/com/mirayai/qbank/common/util/strategy/`（RuleMatchEngine、RuleNode、RuleToSqlTranslator）
+- **Controller**：`src/main/java/com/mirayai/qbank/web/controller/Strategy*Controller.java`
+
+### 迁移差异对照
+
+| 项目 | ThreePart（原） | qbank（迁移后） |
+|------|-----------------|-----------------|
+| API 前缀 | `/api/engine`、`/api/tag`、`/api/scene`、`/api/field` | `/qbank/strategy/engine`、`/qbank/strategy/tag`、`/qbank/strategy/scene`、`/qbank/strategy/field` |
+| 表名前缀 | `strategy_` | `t_strategy_` |
+| 主键字段名 | `id` | `strategy_*_id`（如 `strategy_engine_id`） |
+| 时间字段 | `created_time` / `updated_time` | `gmt_create` / `gmt_modified` |
+| 逻辑删除字段 | `deleted`（tinyint） | `is_deleted`（int） |
+| 审计字段 | 无 | `creator_id`、`creator_name`、`modifier_id`、`modifier_name` |
+| URL 命名风格 | 驼峰（`toggleStatus`、`setDefault`、`cancelDefault`） | 短横线（`toggle-status`、`set-default`、`cancel-default`） |
+
+### 前端联调配置（已修改）
+
+前端项目（`E:\claudeProjects\ThreePart-Web`）已做以下调整以指向 qbank 服务：
+
+- `vite.config.ts`：代理 `/qbank/strategy` → `http://localhost:8291`
+- `src/api/http.ts`：`baseURL` 改为 `/qbank/strategy`；响应拦截器改为 `!result.success` 判断（qbank Result.code 为 `"00000"` 字符串，通过 `success: boolean` 字段判断成功）
+- `src/api/engine.ts`：`toggleStatus` → `toggle-status`，`setDefault` → `set-default`，`cancelDefault` → `cancel-default`
+- `src/api/tag.ts`：`toggleStatus` → `toggle-status`
+- `src/types/index.ts`：所有 VO/DTO 主键字段由 `id` 改为各自完整名（`strategyEngineId`、`strategyTagRuleId`、`strategySceneId`、`strategyTagFieldId`）；时间字段由 `createdTime`/`updatedTime` 改为 `gmtCreate`/`gmtModified`；`StrategySceneTagVO` 新增 `tagDescription` 字段
+- `src/views/engine/EngineList.vue`、`src/views/tag/TagList.vue`、`src/views/tag/TagEdit.vue`、`src/views/scene/SceneList.vue`、`src/views/field/FieldList.vue`：所有取主键的 `.id` 改为对应完整字段名
+
+如需切回 ThreePart 本地开发，`git checkout` 恢复上述相关文件即可。

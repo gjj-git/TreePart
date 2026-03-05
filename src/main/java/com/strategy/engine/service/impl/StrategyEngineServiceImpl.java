@@ -46,7 +46,7 @@ public class StrategyEngineServiceImpl implements StrategyEngineService {
                 .eq(StringUtils.hasText(queryDTO.getType()), StrategyEngine::getType, queryDTO.getType())
                 .eq(StringUtils.hasText(queryDTO.getApplicableObject()), StrategyEngine::getApplicableObject, queryDTO.getApplicableObject())
                 .eq(queryDTO.getStatus() != null, StrategyEngine::getStatus, queryDTO.getStatus())
-                .orderByDesc(StrategyEngine::getUpdatedTime);
+                .orderByDesc(StrategyEngine::getCreatedTime);
 
         Page<StrategyEngine> resultPage = strategyEngineMapper.selectPage(page, wrapper);
         return (Page<StrategyEngineVO>) resultPage.convert(engine -> BeanUtil.copyProperties(engine, StrategyEngineVO.class));
@@ -125,6 +125,9 @@ public class StrategyEngineServiceImpl implements StrategyEngineService {
         StrategyEngine engine = strategyEngineMapper.selectById(id);
         if (engine == null) {
             throw new BusinessException("引擎不存在");
+        }
+        if (engine.getStatus() == 1 && Integer.valueOf(1).equals(engine.getIsDefault())) {
+            throw new BusinessException("默认引擎不能禁用，请先取消默认后再禁用");
         }
         LambdaUpdateWrapper<StrategyEngine> wrapper = new LambdaUpdateWrapper<>();
         wrapper.eq(StrategyEngine::getId, id)

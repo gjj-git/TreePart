@@ -154,7 +154,7 @@ public class StrategyTagRuleServiceImpl implements StrategyTagRuleService {
             relationWrapper.eq(StrategySceneTag::getTagId, id);
             Long usageCount = strategySceneTagMapper.selectCount(relationWrapper);
             if (usageCount > 0) {
-                throw new BusinessException("该标签已被 " + usageCount + " 个场景引用，禁用后这些场景的匹配规则将不完整，请先移除场景中的标签配置后再禁用");
+                throw new BusinessException("该标签已被 " + usageCount + " 个场景引用，请先移除关联后再禁用");
             }
         }
 
