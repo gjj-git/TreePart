@@ -19,8 +19,12 @@
 
 ## 项目目录
 
-- **后端项目**：`E:\claudeProjects\ThreePart`（当前目录，Spring Boot）
-- **前端项目**：`E:\claudeProjects\ThreePart-Web`（Vue 3 + TypeScript）
+- **后端项目**：`E:\claudeProjects\ThreePart`（当前目录，Spring Boot，已废弃，策略引擎已迁移至 qbank）
+- **前端项目（当前主力）**：`E:\Projects\Frontend\kgraph-frontend`（Vue 3 + TypeScript，对接 qbank 服务）
+- **前端项目（旧）**：`E:\claudeProjects\ThreePart-Web`（已不再主动开发，可作为参考）
+- **后端项目（当前主力）**：`C:\Users\Administrator\.ssh\Qbank\qbank-app`（Spring Boot，本地端口 8291）
+
+> **重要**：所有前端修改必须在 `E:\Projects\Frontend\kgraph-frontend` 进行，不要修改 `E:\claudeProjects\ThreePart-Web` 或 `F:\ThreePart-Web`。
 
 ---
 
@@ -99,6 +103,8 @@ com.strategy.engine
 - **`rule_sql` 自动生成**：`strategy_tag_rule` 表新增 `rule_sql`（TEXT）列，保存标签规则时后端调用 `RuleToSqlTranslator.translate(ruleConfig)` 自动将 JSON 条件树转为 SQL WHERE 片段并双写，供 Superset/BI 直接使用。`RuleMatchEngine` 继续使用 `rule_config` JSON 进行 Java 内存求值，两条路径互不影响。
 - **主键生成策略**：所有实体类主键使用 `@TableId(type = IdType.ASSIGN_ID)`，采用 MyBatis-Plus 内置雪花算法生成 19 位数字 ID，INSERT 前由应用层生成，数据库 `AUTO_INCREMENT` 保留但不触发。
 - **分页插件**：`MybatisPlusConfig` 注册 `PaginationInnerInterceptor(DbType.MYSQL)`，所有 `selectPage` 调用均会执行 count 查询，`total`/`pages` 正确返回。
+- **引擎组（StrategyEngineGroup）**：新增引擎组概念，一个引擎组可包含多个引擎，同组内 `type + applicableObject` 组合唯一（最多 8 个）。系统维护全局唯一默认引擎组（`is_default=1`），调用方通过 `GET /qbank/strategy/engine-group/resolve-engine?type=&applicableObject=` 从默认引擎组获取对应引擎。`t_strategy_engine.is_default` 字段已删除。
+- **`StrategyEngineGroupRel` 使用物理删除**（无 `is_deleted` 列），无审计字段，对照 `t_strategy_scene_tag` 设计。
 
 ### RuleMatchEngine 条件树格式
 
@@ -211,3 +217,65 @@ UPDATE strategy_engine SET is_default = CASE WHEN id = #{id} THEN 1 ELSE 0 END W
 - `src/views/engine/EngineList.vue`、`src/views/tag/TagList.vue`、`src/views/tag/TagEdit.vue`、`src/views/scene/SceneList.vue`、`src/views/field/FieldList.vue`：所有取主键的 `.id` 改为对应完整字段名
 
 如需切回 ThreePart 本地开发，`git checkout` 恢复上述相关文件即可。
+
+---
+
+## kgraph-frontend 前端项目说明
+
+### 项目路径
+`E:\Projects\Frontend\kgraph-frontend`
+
+### 技术栈
+Vue 3 + TypeScript + Element Plus + Tailwind CSS + Pinia
+
+### 策略引擎相关文件
+```
+src/
+├── views/strategy/
+│   ├── engine/
+│   │   ├── EngineList.vue       引擎列表页（已移除"是否默认"列和设默认操作）
+│   │   └── EngineConfig.vue     引擎配置页（含标签管理/场景管理 Tab，父容器 h-[calc(100vh-100px)]）
+│   ├── engine-group/
+│   │   └── EngineGroupList.vue  引擎组列表页（含展开行展示组内引擎、添加/移除引擎弹窗）
+│   ├── tag/
+│   │   ├── TagList.vue          标签列表页（根容器用 h-full，不能用 h-[calc(100vh-100px)]）
+│   │   └── TagEdit.vue          标签编辑页（新建/编辑标签规则，含 RuleEditor）
+│   ├── scene/
+│   │   └── SceneList.vue        场景列表页（含标签权重管理弹窗 + 关联新标签弹窗）
+│   └── field/
+│       └── FieldList.vue        字段管理页
+├── components/RuleEditor/
+│   ├── index.vue                规则编辑器容器（左侧字段面板 + 右侧画布）
+│   ├── RuleGroup.vue            分组节点（AND/OR 切换，支持嵌套）
+│   └── RuleCondition.vue        条件节点（字段选择/运算符/值，bg-blue-100 蓝色背景）
+├── api/
+│   ├── strategyEngine.ts        引擎相关 API（已移除 setDefault/cancelDefault/getDefault）
+│   ├── strategyEngineGroup.ts   引擎组相关 API（新增）
+│   ├── strategyTag.ts           标签相关 API
+│   ├── strategyScene.ts         场景相关 API
+│   └── strategyField.ts         字段相关 API
+└── store/
+    ├── strategyEngine.ts
+    ├── strategyEngineGroup.ts   引擎组 Store（新增）
+    ├── strategyTag.ts
+    ├── strategyScene.ts
+    └── strategyEnum.ts
+```
+
+### 代理配置
+`vite.config.ts` 代理 `/qbank/strategy` → `http://localhost:8291`
+
+### 布局注意事项
+- `EngineConfig.vue` 是父容器，已设 `h-[calc(100vh-100px)]`，内容区 `flex-1 overflow-hidden`
+- 子页面（TagList、SceneList）根容器必须用 `h-full`，否则分页会被挤出可视区域
+- 表格用 `class="flex-1 min-h-0"`，分页放在表格区外部底部
+
+### RuleEditor 样式规范
+- 整体外框：`border border-gray-200 rounded-lg`
+- 左侧字段面板：`bg-white`，字段项：`bg-[#F2F3F5]`
+- 右侧画布：`bg-white`
+- 根分组：`bg-white`（无边框）
+- 子分组：`bg-white border border-dashed border-gray-300`
+- 条件行：`bg-blue-100`（蓝色背景），内部三个输入框默认白色不需要额外覆盖
+- AND/OR 激活色：`bg-blue-600`
+- 且/或分隔文字：`text-center text-sm text-gray-500`
